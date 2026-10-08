@@ -87,7 +87,13 @@ const ICONS = {
   cross:['...33...','...33...','.333333.','.333333.','.333333.','...33...','...33...','........'],
   note:['....11..','....1.1.','....1..1','..111...','.11111..','.11111..','..111...','........'],
   ball:['..1111..','.166661.','16633661','16333361','16333361','16633661','.166661.','..1111..'],
-  grave:['..1111..','.1ffff1.','1ffffff1','1f1111f1','1ffffff1','1ffffff1','11111111','.111111.']
+  grave:['..1111..','.1ffff1.','1ffffff1','1f1111f1','1ffffff1','1ffffff1','11111111','.111111.'],
+  virus: ['...6....','.6.6.6..','..666...','.66666..','.66666..','..666...','.6.6.6..','...6....'],
+  shield:['.444444.','4222224.','4211124.','4222224.','.422224.','..4224..','...44...','........'],
+  moon:  ['...55...','..5.....','.5......','.5......','.5......','..5.....','...55...','........'],
+  key:   ['..111...','.1...1..','.1...1..','..111...','...1....','...11...','...1....','...1....'],
+  mail:  ['........','11111111','12222221','12111121','12212221','12222221','11111111','........'],
+  doc:   ['11111111','12222221','12222221','12122121','12222221','12222221','11113311','...3333.']
 };
 
 function wpx(x,y,w,h,c){ octx.fillStyle=c; octx.fillRect(x|0,y|0,Math.ceil(w),Math.ceil(h)); }
@@ -211,60 +217,60 @@ function musicTick(){
 // ------------------------------------------------------------
 const LIFE = [
   // —— 婴幼儿 ——
-  {type:'tap',  n:'喝到第一口奶', ic:'milk',    d:3.0},
-  {type:'rapid',n:'学会喊妈妈',   ic:'baby',    d:2.9, need:7},
-  {type:'pick', n:'抓周',         ic:'book',    d:3.0, opts:['书','钞票','公章'], right:0},
-  {type:'hold', n:'迈出第一步',   ic:'ball',    d:2.7, hold:0.5},
-  {type:'tap',  n:'打疫苗不能哭', ic:'syringe', d:2.5},
-  {type:'drag', n:'背上小书包',   ic:'bag',     d:3.0},
+  {type:'tap',  n:'喝到第一口奶', ic:'milk',    d:3.0, ok:'milkOk', no:'milkNo'},
+  {type:'rapid',n:'学会喊妈妈',   ic:'baby',    d:2.9, need:7, ok:'momOk', no:'momNo'},
+  {type:'pick', n:'抓周',         ic:'book',    d:3.0, opts:['书','钞票','公章'], right:0, ok:'zhouOk', no:'zhouNo'},
+  {type:'hold', n:'迈出第一步',   ic:'ball',    d:2.7, hold:0.5, ok:'stepOk', no:'stepNo'},
+  {type:'tap',  n:'打疫苗不能哭', ic:'syringe', d:2.5, ok:'vacOk', no:'vacNo'},
+  {type:'drag', n:'背上小书包',   ic:'bag',     d:3.0, ok:'bagOk', no:'bagNo'},
   // —— 小学 ——
-  {type:'rapid',n:'写完今天的作业',ic:'pen',    d:2.7, need:7},
-  {type:'tap',  n:'背下这首古诗', ic:'book',    d:2.5},
-  {type:'rapid',n:'广播体操',     ic:'star',    d:2.7, need:7},
-  {type:'tap',  n:'交到第一个朋友',ic:'heart',  d:2.5, k:1},
-  {type:'tap',  n:'偷玩十分钟游戏',ic:'gamepad',d:2.4},
-  {type:'pick', n:'竞选班干部',   ic:'cap',     d:2.9, opts:['我想为大家服务','我请大家吃辣条','我爸是家委会'], right:2},
+  {type:'rapid',n:'写完今天的作业',ic:'pen',    d:2.7, need:7, ok:'hwOk', no:'hwNo'},
+  {type:'tap',  n:'背下这首古诗', ic:'book',    d:2.5, ok:'poemOk', no:'poemNo'},
+  {type:'rapid',n:'广播体操',     ic:'star',    d:2.7, need:7, ok:'gymOk', no:'gymNo'},
+  {type:'tap',  n:'交到第一个朋友',ic:'heart',  d:2.5, k:1, ok:'friendOk', no:'friendNo'},
+  {type:'tap',  n:'偷玩十分钟游戏',ic:'gamepad',d:2.4, ok:'gameOk', no:'gameNo'},
+  {type:'pick', n:'竞选班干部',   ic:'cap',     d:2.9, opts:['我想为大家服务','我请大家吃辣条','我爸是家委会'], right:2, ok:'voteOk', no:'voteNo'},
   // —— 中学 ——
-  {type:'rapid',n:'刷完这套卷子', ic:'pen',     d:2.7, need:7},
-  {type:'tap',  n:'偷偷喜欢的人', ic:'heart',   d:2.5, k:1},
-  {type:'hold', n:'熬夜复习',     ic:'book',    d:2.7, hold:0.55},
-  {type:'rapid',n:'高考',         ic:'paper',   d:3.1, need:8},
-  {type:'tap',  n:'毕业合影',     ic:'cap',     d:2.5},
+  {type:'rapid',n:'刷完这套卷子', ic:'pen',     d:2.7, need:7, ok:'testOk', no:'testNo'},
+  {type:'tap',  n:'偷偷喜欢的人', ic:'heart',   d:2.5, k:1, ok:'crushOk', no:'crushNo'},
+  {type:'hold', n:'熬夜复习',     ic:'book',    d:2.7, hold:0.55, ok:'nightOk', no:'nightNo'},
+  {type:'rapid',n:'高考',         ic:'paper',   d:3.1, need:8, ok:'gkOk', no:'gkNo'},
+  {type:'tap',  n:'毕业合影',     ic:'cap',     d:2.5, ok:'gradOk', no:'gradNo'},
   // —— 青年 ——
-  {type:'tap',  n:'投出第 87 份简历',ic:'paper',d:2.2},
-  {type:'pick', n:'面试',         ic:'briefcase',d:2.9,opts:['我不会但我可以学','我精通一切','我要求双休'], right:1},
-  {type:'drag', n:'租一间城中村', ic:'house',   d:2.5},
-  {type:'rapid',n:'通宵加班',     ic:'briefcase',d:2.7,need:7},
-  {type:'tap',  n:'谈恋爱',       ic:'heart',   d:2.3, k:1},
-  {type:'rapid',n:'攒首付',       ic:'coin',    d:2.9, need:7},
-  {type:'drag', n:'买下那套房',   ic:'house',   d:2.7, k:1},
-  {type:'drag', n:'戴上戒指',     ic:'ring',    d:2.7, k:1},
-  {type:'hold', n:'抱起新生的孩子',ic:'baby',   d:2.6, hold:0.5, k:1},
-  {type:'tap',  n:'提走人生第一辆车',ic:'car',  d:2.1},
+  {type:'tap',  n:'投出第 87 份简历',ic:'paper',d:2.2, ok:'resumeOk', no:'resumeNo'},
+  {type:'pick', n:'面试',         ic:'briefcase',d:2.9,opts:['我不会但我可以学','我精通一切','我要求双休'], right:1, ok:'itvOk', no:'itvNo'},
+  {type:'drag', n:'租一间城中村', ic:'house',   d:2.5, ok:'rentOk', no:'rentNo'},
+  {type:'rapid',n:'通宵加班',     ic:'briefcase',d:2.7,need:7, ok:'otOk', no:'otNo'},
+  {type:'tap',  n:'谈恋爱',       ic:'heart',   d:2.3, k:1, ok:'loveOk', no:'loveNo'},
+  {type:'rapid',n:'攒首付',       ic:'coin',    d:2.9, need:7, ok:'saveOk', no:'saveNo'},
+  {type:'drag', n:'买下那套房',   ic:'house',   d:2.7, k:1, ok:'houseOk', no:'houseNo'},
+  {type:'drag', n:'戴上戒指',     ic:'ring',    d:2.7, k:1, ok:'ringOk', no:'ringNo'},
+  {type:'hold', n:'抱起新生的孩子',ic:'baby',   d:2.6, hold:0.5, k:1, ok:'babyOk', no:'babyNo'},
+  {type:'tap',  n:'提走人生第一辆车',ic:'car',  d:2.1, ok:'carOk', no:'carNo'},
   // —— 中年 ——
-  {type:'rapid',n:'还房贷',       ic:'coin',    d:2.7, need:7},
-  {type:'rapid',n:'辅导孩子作业', ic:'book',    d:2.5, need:6},
-  {type:'pick', n:'升职答辩',     ic:'briefcase',d:2.7,opts:['讲业绩','讲情怀','讲领导好'], right:2},
-  {type:'rapid',n:'应酬敬酒',     ic:'cup',     d:2.5, need:6},
-  {type:'pick', n:'翻开体检报告', ic:'cross',   d:2.7, opts:['一切正常','轻度脂肪肝','建议复查'], right:0},
-  {type:'tap',  n:'回家陪父母吃顿饭',ic:'heart',d:2.4, k:1},
-  {type:'tap',  n:'同学聚会',     ic:'cup',     d:2.1},
-  {type:'hold', n:'办那张健身卡', ic:'ball',    d:2.5, hold:0.55},
-  {type:'hold', n:'送别父母',     ic:'flower',  d:3.1, hold:0.6, k:1},
-  {type:'tap',  n:'接催收电话',   ic:'phone',   d:2.1},
+  {type:'rapid',n:'还房贷',       ic:'coin',    d:2.7, need:7, ok:'loanOk', no:'loanNo'},
+  {type:'rapid',n:'辅导孩子作业', ic:'book',    d:2.5, need:6, ok:'tutorOk', no:'tutorNo'},
+  {type:'pick', n:'升职答辩',     ic:'briefcase',d:2.7,opts:['讲业绩','讲情怀','讲领导好'], right:2, ok:'promoOk', no:'promoNo'},
+  {type:'rapid',n:'应酬敬酒',     ic:'cup',     d:2.5, need:6, ok:'toastOk', no:'toastNo'},
+  {type:'pick', n:'翻开体检报告', ic:'cross',   d:2.7, opts:['一切正常','轻度脂肪肝','建议复查'], right:0, ok:'healthOk', no:'healthNo'},
+  {type:'tap',  n:'回家陪父母吃顿饭',ic:'heart',d:2.4, k:1, ok:'dinnerOk', no:'dinnerNo'},
+  {type:'tap',  n:'同学聚会',     ic:'cup',     d:2.1, ok:'reunionOk', no:'reunionNo'},
+  {type:'hold', n:'办那张健身卡', ic:'ball',    d:2.5, hold:0.55, ok:'gym2Ok', no:'gym2No'},
+  {type:'hold', n:'送别父母',     ic:'flower',  d:3.1, hold:0.6, k:1, ok:'farewellOk', no:'farewellNo'},
+  {type:'tap',  n:'接催收电话',   ic:'phone',   d:2.1, ok:'debtOk', no:'debtNo'},
   // —— 老年 ——
-  {type:'tap',  n:'办退休手续',   ic:'clock',   d:2.3},
-  {type:'rapid',n:'跳广场舞',     ic:'note',    d:2.5, need:6},
-  {type:'hold', n:'抱一抱孙子',   ic:'baby',    d:2.6, hold:0.55, k:1},
-  {type:'drag', n:'出门看一次世界',ic:'car',    d:2.5},
-  {type:'tap',  n:'养花晒太阳',   ic:'flower',  d:2.3},
-  {type:'rapid',n:'按时吃药',     ic:'pill',    d:2.5, need:6},
-  {type:'hold', n:'一个人吃完晚饭',ic:'cup',    d:2.6, hold:0.6, k:1},
-  {type:'tap',  n:'看一次夕阳',   ic:'sun',     d:2.8, k:1},
-  {type:'tap',  n:'给儿女打个电话',ic:'phone',  d:2.8, k:1},
+  {type:'tap',  n:'办退休手续',   ic:'clock',   d:2.3, ok:'retireOk', no:'retireNo'},
+  {type:'rapid',n:'跳广场舞',     ic:'note',    d:2.5, need:6, ok:'danceOk', no:'danceNo'},
+  {type:'hold', n:'抱一抱孙子',   ic:'baby',    d:2.6, hold:0.55, k:1, ok:'grandOk', no:'grandNo'},
+  {type:'drag', n:'出门看一次世界',ic:'car',    d:2.5, ok:'travelOk', no:'travelNo'},
+  {type:'tap',  n:'养花晒太阳',   ic:'flower',  d:2.3, ok:'flowerOk', no:'flowerNo'},
+  {type:'rapid',n:'按时吃药',     ic:'pill',    d:2.5, need:6, ok:'pillOk', no:'pillNo'},
+  {type:'hold', n:'一个人吃完晚饭',ic:'cup',    d:2.6, hold:0.6, k:1, ok:'aloneOk', no:'aloneNo'},
+  {type:'tap',  n:'看一次夕阳',   ic:'sun',     d:2.8, k:1, ok:'sunsetOk', no:'sunsetNo'},
+  {type:'tap',  n:'给儿女打个电话',ic:'phone',  d:2.8, k:1, ok:'callOk', no:'callNo'},
   // —— 临终 ——
-  {type:'rapid',n:'努力呼吸',     ic:'heart',   d:3.0, need:7},
-  {type:'tap',  n:'想起很久以前', ic:'star',    d:3.0, k:1}
+  {type:'rapid',n:'努力呼吸',     ic:'heart',   d:3.0, need:7, ok:'breathOk', no:'breathNo'},
+  {type:'tap',  n:'想起很久以前', ic:'star',    d:3.0, k:1, ok:'memOk', no:'memNo'}
 ];
 
 // 每个事件对应的真实年龄（岁），必须单调不减 —— 用来把"秒"换算成"岁"
@@ -504,6 +510,8 @@ let animT = 0;
 // ------------------------------------------------------------
 let heroAnim = null;
 let animFreeze = false;   // 仅调试入口使用
+let fxFreeze = false;     // 仅调试入口使用（定格结果动画）
+let noSpawn  = false;     // 仅调试入口使用（暂停事件生成，便于观察特效）
 
 // 各动作时长（秒）
 const REACT_DUR = { hop:0.55, cheer:0.78, lunge:0.52, shiver:0.68, strain:0.80,
@@ -678,6 +686,1013 @@ function drawHeroFX(hx, hy, s, pose, t){
   }
 }
 
+// ------------------------------------------------------------
+// 5c. 每个任务专属的成功 / 失败动画
+//     锚点永远在小人身上：hx = 小人横坐标，hy = 脚底
+//     一个特效 = { dur, aura, draw(hx,hy,u,t,f), overlay(hx,hy,u,f) }
+//       draw    -> 画在像素世界层（跟场景一起被放大）
+//       overlay -> 画在主画布（中文小字，保持清晰）
+// ------------------------------------------------------------
+let evFX = [];        // 正在播放的结果动画
+let heroAura = null;  // 挂在小人身上的临时状态
+
+function prand(i){ const s = Math.sin(i*127.1 + 311.7)*43758.5453; return s - Math.floor(s); }
+function uclamp(u){ return u < 0 ? 0 : (u > 1 ? 1 : u); }
+function fxEase(u){ u = uclamp(u); return 1 - Math.pow(1-u, 3); }
+function fxA(a){ octx.globalAlpha = a < 0 ? 0 : (a > 1 ? 1 : a); }
+// 进场快、退场淡
+function fxLife(u, inK, outK){
+  inK  = (inK  == null) ? 0.14 : inK;
+  outK = (outK == null) ? 0.24 : outK;
+  if(u < inK) return u/inK;
+  if(u > 1-outK) return Math.max(0, (1-u)/outK);
+  return 1;
+}
+function fxIconA(ic, x, y, sc, a){ fxA(a == null ? 1 : a); drawIcon(ic, x, y, sc || 2); octx.globalAlpha = 1; }
+function fxRing(cx, cy, r, col, a, k){
+  k = k || 1.6;
+  const st = Math.max(10, Math.round(r*3.2));
+  fxA(a == null ? 1 : a);
+  for(let i=0;i<st;i++){
+    const an = i/st*6.2832;
+    wpx(cx + Math.cos(an)*r, cy + Math.sin(an)*r*0.7, k, k, col);
+  }
+  octx.globalAlpha = 1;
+}
+function fxSparks(cx, cy, n, cols, u, opt){
+  opt = opt || {};
+  const sp = opt.spread || 36, up = opt.up || 28, size = opt.size || 2.2;
+  const k = opt.life == null ? fxLife(u, 0.08, 0.45) : opt.life;
+  fxA(k);
+  for(let i=0;i<n;i++){
+    const r1 = prand(i*7+1), r2 = prand(i*7+2);
+    const an = r1*6.2832 + 1.2;
+    const d  = sp*(0.3 + uclamp(u)*0.9)*(0.45 + r2*0.9);
+    const px = cx + Math.cos(an)*d;
+    const py = cy - up*(0.3 + uclamp(u)) + Math.sin(an)*d*0.5 + uclamp(u)*uclamp(u)*20;
+    wpx(px, py, size, size, cols[i % cols.length]);
+  }
+  octx.globalAlpha = 1;
+}
+// 主画布上的浮动小字（清晰中文）
+function fxLab(cfg){
+  const txt = cfg.label;
+  return function(hx, hy, u){
+    if(!txt) return;
+    const a = fxLife(u, cfg.labIn == null ? 0.10 : cfg.labIn, cfg.labOut == null ? 0.30 : cfg.labOut);
+    const y = hy - (cfg.labelY == null ? 78 : cfg.labelY) - (cfg.labelRise || 0)*fxEase(u);
+    const x = hx + (cfg.labelOx || 0);
+    ctx.globalAlpha = a;
+    ctx.font = 'bold ' + (cfg.labelSize || 13) + 'px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = 'rgba(0,0,0,0.82)';
+    ctx.strokeText(txt, x, y);
+    ctx.fillStyle = cfg.labelCol || '#ffe37a';
+    ctx.fillText(txt, x, y);
+    ctx.globalAlpha = 1;
+  };
+}
+
+// ============================================================
+//  特效配方（复用同一套"运动"，靠参数拉开差异）
+// ============================================================
+// 上方弹出后升起
+function R_pop(icon, c){
+  c = c || {};
+  return { dur:c.dur||1.35, aura:c.aura, auraDur:c.auraDur,
+    draw:function(hx,hy,u){
+      const a = fxLife(u, 0.12, 0.25);
+      const base = c.base == null ? 44 : c.base;
+      const y = hy - base - (c.rise == null ? 18 : c.rise)*fxEase(u);
+      const x = hx + (c.ox||0) + (c.sway ? Math.sin(u*6.2832)*(c.sway) : 0);
+      fxIconA(icon, x, y, c.sc||2.6, a);
+      if(c.spark) fxSparks(x, y+6, c.spark, c.sparkCol||['#ffe37a','#fff6c0','#ffffff'], u,
+                           {spread:c.spread||22, up:c.up||12, size:2});
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 抛向画面外侧
+function R_throw(icon, c){
+  c = c || {};
+  return { dur:c.dur||1.4, aura:c.aura,
+    draw:function(hx,hy,u){
+      const a = fxLife(u, 0.08, 0.22), d = c.dir == null ? 1 : c.dir;
+      const arc = c.arc == null ? 34 : c.arc, dist = c.dist || 100, y0 = c.y0 == null ? 34 : c.y0;
+      const px = hx + d*(8 + dist*fxEase(u));
+      const py = hy - y0 - Math.sin(uclamp(u)*Math.PI)*arc;
+      fxIconA(icon, px, py, c.sc||2.4, a);
+      fxA(a*0.45);
+      for(let i=1;i<=4;i++){
+        const uu = uclamp(u - i*0.055);
+        wpx(hx + d*(8 + dist*fxEase(uu)), hy - y0 - Math.sin(uu*Math.PI)*arc,
+            1.8, 1.8, c.trail || '#ffe37a');
+      }
+      octx.globalAlpha = 1;
+      if(c.spark) fxSparks(px, py, 4, c.sparkCol||['#ffe37a','#ffffff'], u, {spread:14, up:8, size:2});
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 掉到地上（可带碎片 / 涟漪）
+function R_drop(icon, c){
+  c = c || {};
+  return { dur:c.dur||1.7, aura:c.aura,
+    draw:function(hx,hy,u){
+      const a = fxLife(u, 0.08, 0.20);
+      const top = c.top == null ? 42 : c.top;
+      const fall = fxEase(uclamp(u/0.42));
+      const x = hx + (c.ox||0);
+      const bounce = c.bounce ? Math.max(0, Math.sin(uclamp((u-0.42)/0.2)*Math.PI))*6*((u>0.42&&u<0.62)?1:0) : 0;
+      const y = hy - top*(1-fall) - 3 - bounce;
+      fxIconA(icon, x, y, c.sc||2.4, a);
+      if(c.debris){
+        const ud = uclamp((u-0.34)/0.6);
+        const n = c.debrisN || 8;
+        const cols = c.debrisCol || ['#3f8fd8','#e0483c','#5cbf6a','#f2c33d','#ffffff'];
+        fxA(fxLife(u, 0.34, 0.34));
+        for(let i=0;i<n;i++){
+          const r1 = prand(i*5+2), r2 = prand(i*5+3);
+          const dir = (i%2) ? 1 : -1;
+          const dx = dir*(5 + ud*(10 + r1*(c.debrisSpread||38)));
+          const dy = -ud*11 + ud*ud*(6 + r2*10);
+          wpx(x + dx, hy - 4 + dy, c.debrisSize||3, 2.6, cols[i % cols.length]);
+        }
+        octx.globalAlpha = 1;
+      }
+      if(c.ripple && u > 0.34 && u < 0.72){
+        fxRing(x, hy-1, 5 + (u-0.34)*44, c.rippleCol||'rgba(255,255,255,0.55)', (0.72-u)/0.38*0.7, 1.4);
+      }
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 一圈圈扩散（声波 / 免疫 / 节拍）
+function R_rings(c){
+  c = c || {};
+  return { dur:c.dur||1.4, aura:c.aura,
+    draw:function(hx,hy,u){
+      const n = c.n || 3, oy = c.oy == null ? 46 : c.oy, ox = c.ox || 0;
+      for(let i=0;i<n;i++){
+        const uu = uclamp((u - i*0.14)/(1 - i*0.14 + 0.001));
+        if(uu <= 0 || uu >= 1) continue;
+        fxRing(hx+ox, hy-oy, 8 + uu*(c.maxR||44), c.col||'#bfe6ff', (1-uu)*0.8, 1.6);
+      }
+      if(c.icon){
+        fxA(fxLife(u, 0.12, 0.25));
+        drawIcon(c.icon, hx+ox, hy-oy, c.sc||2.2);
+        octx.globalAlpha = 1;
+      }
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 进度条（票数 / 房贷）
+function R_meter(c){
+  c = c || {};
+  return { dur:c.dur||1.5, aura:c.aura,
+    draw:function(hx,hy,u){
+      const w = c.w || 58, x0 = hx + (c.ox == null ? -29 : c.ox), y0 = hy - (c.oy == null ? 58 : c.oy);
+      wpx(x0-2, y0-2, w+4, 10, 'rgba(0,0,0,0.55)');
+      wpx(x0, y0, w, 6, 'rgba(255,255,255,0.16)');
+      const f = uclamp(u*1.25);
+      const fv = c.shrink ? Math.max(0, 1-f) : Math.min(1, f*(c.fill == null ? 1 : c.fill));
+      wpx(x0, y0, w*fv, 6, c.col || '#7cf08a');
+      if(c.tick){
+        fxA(fxLife(u, 0.1, 0.25));
+        for(let i=1;i<=5;i++) wpx(x0 + w*(i/6), y0-1, 1.4, 8, 'rgba(255,255,255,0.35)');
+        octx.globalAlpha = 1;
+      }
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 一层层堆起来（金币 / 账单）
+function R_stack(icon, c){
+  c = c || {};
+  return { dur:c.dur||1.7, aura:c.aura,
+    draw:function(hx,hy,u){
+      const n = c.n || 6, x0 = hx + (c.ox == null ? 26 : c.ox);
+      for(let i=0;i<n;i++){
+        const uu = uclamp((u - i*0.09)/0.5);
+        if(uu <= 0) continue;
+        fxA(fxLife(u, 0.06, 0.30));
+        drawIcon(icon, x0, hy - 3 - i*(c.step||6)*fxEase(uu), c.sc||1.5);
+      }
+      octx.globalAlpha = 1;
+      if(c.spark) fxSparks(x0, hy-18, 6, c.sparkCol||['#ffe37a','#fff6c0'], u, {spread:20, up:18, size:2});
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 长大 / 开花 / 亮起来
+function R_grow(icon, c){
+  c = c || {};
+  return { dur:c.dur||1.7, aura:c.aura,
+    draw:function(hx,hy,u){
+      const g = fxEase(uclamp(u/0.7));
+      const sc = (c.sc0||0.6) + ((c.sc1||3.2) - (c.sc0||0.6))*g;
+      const x = hx + (c.ox||0), y = hy - (c.oy == null ? 8 : c.oy) - (c.lift == null ? 10 : c.lift)*g;
+      fxIconA(icon, x, y, sc, fxLife(u, 0.1, 0.2));
+      if(c.petals){
+        fxA(fxLife(u, 0.3, 0.3));
+        for(let i=0;i<4;i++){
+          const r1 = prand(i*9+4), r2 = prand(i*9+5);
+          wpx(x + Math.cos(r1*6.28)*(10+g*16), y + Math.sin(r2*6.28)*(8+g*10), 3, 3, c.petals[i%c.petals.length]);
+        }
+        octx.globalAlpha = 1;
+      }
+      if(c.spark) fxSparks(x, y, 5, c.sparkCol||['#ffe37a','#ffffff'], u, {spread:18, up:14, size:2});
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 裂开 / 碎掉
+function R_crack(icon, c){
+  c = c || {};
+  return { dur:c.dur||1.6, aura:c.aura,
+    draw:function(hx,hy,u){
+      const x = hx + (c.ox||0), y = hy - (c.oy == null ? 44 : c.oy);
+      const sh = uclamp((u-0.30)/0.5);
+      if(sh < 1){
+        fxA(fxLife(u, 0.1, 0.2));
+        drawIcon(icon, x, y, c.sc||2.6);
+        octx.globalAlpha = 1;
+        if(sh > 0){
+          fxA(sh);
+          wpx(x-9, y-9, 3, 9, '#ffffff'); wpx(x-6, y-1, 2, 8, '#ffffff');
+          octx.globalAlpha = 1;
+        }
+      }
+      if(sh > 0){
+        const cols = c.cols || ['#ffffff','#cfd6e6','#9aa0a6'];
+        fxA(fxLife(u, 0.30, 0.40));
+        for(let i=0;i<(c.n||9);i++){
+          const r1 = prand(i*11+6), r2 = prand(i*11+7);
+          const dir = (i%2) ? 1 : -1;
+          const dx = dir*(4 + sh*(10 + r1*46));
+          const dy = -sh*8 + sh*sh*(14 + r2*22);
+          wpx(x + dx, y + dy, 3, 3, cols[i % cols.length]);
+        }
+        octx.globalAlpha = 1;
+      }
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 两个东西相撞（两颗心 / 干杯 / 牵手）
+function R_two(a, b, c){
+  c = c || {};
+  return { dur:c.dur||1.5, aura:c.aura,
+    draw:function(hx,hy,u){
+      const y = hy - (c.oy == null ? 48 : c.oy);
+      const g = fxEase(uclamp(u/0.6));
+      const gap = (c.gap||34)*(1-g);
+      fxIconA(a, hx - gap, y, c.sc||2.3, fxLife(u, 0.10, 0.22));
+      fxIconA(b, hx + gap, y, c.sc||2.3, fxLife(u, 0.10, 0.22));
+      if(g < 0.14) fxSparks(hx, y, c.spark||8, c.sparkCol||['#ffc6dd','#ffe37a','#ffffff'], u, {spread:22, up:12, size:2.2});
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 一群东西围上来（病毒 / 哭闹）
+function R_swarm(icon, c){
+  c = c || {};
+  return { dur:c.dur||1.7, aura:c.aura,
+    draw:function(hx,hy,u){
+      const n = c.n || 6;
+      const g = fxEase(uclamp(u/0.75));
+      for(let i=0;i<n;i++){
+        const r1 = prand(i*13+8), r2 = prand(i*13+9);
+        const an = r1*6.2832;
+        const d  = (c.r0 == null ? 54 : c.r0)*(1 - g*0.62);
+        const x = hx + Math.cos(an)*d;
+        const y = hy - (c.oy == null ? 36 : c.oy) + Math.sin(an)*d*0.55 + Math.sin(u*7 + i)*2;
+        fxIconA(icon, x, y, c.sc||1.7, fxLife(u, 0.10, 0.20)*0.95);
+      }
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 天气 / 环境（雨、云、夜、太阳、雪）
+function R_weather(kind, c){
+  c = c || {};
+  return { dur:c.dur||1.8, aura:c.aura,
+    draw:function(hx,hy,u){
+      if(kind === 'rain'){
+        fxA(fxLife(u, 0.15, 0.25));
+        for(let i=0;i<14;i++){
+          const r1 = prand(i*3+1);
+          wpx(hx - 40 + r1*80, hy - 70 + uclamp((u*2.2 + r1) % 1)*70, 1.6, 7, '#8fd0ff');
+        }
+        octx.globalAlpha = 1;
+        wpx(hx-22, hy-82, 44, 9, '#5a6478'); wpx(hx-14, hy-90, 30, 8, '#6b7588');
+      } else if(kind === 'cloud'){
+        const g = fxEase(uclamp(u/0.55));
+        const cx = hx + 10 - g*30;
+        wpx(cx-8, hy-86, 46, 10, '#8a94a6');
+        wpx(cx,   hy-94, 30,  9, '#9aa4b6');
+        fxA(fxLife(u, 0.15, 0.3)*0.35);
+        wpx(hx-44, hy-70, 88, 44, 'rgba(20,20,32,0.5)');
+        octx.globalAlpha = 1;
+      } else if(kind === 'night'){
+        fxIconA('moon', hx+46, hy-80, 2.2, fxLife(u, 0.15, 0.2));
+        fxA(fxLife(u, 0.2, 0.3)*0.32);
+        for(let i=0;i<12;i++) wpx(hx+36-i*2.6, hy-74+i*5, 34-i*2.6, 5, '#ffe9a0');
+        octx.globalAlpha = 1;
+      } else if(kind === 'sun'){
+        fxIconA('sun', hx+46, hy-82, 2.6, fxLife(u, 0.15, 0.25));
+        fxA(fxLife(u, 0.2, 0.3)*0.30);
+        for(let i=0;i<16;i++){
+          const an = i/16*6.2832;
+          wpx(hx+46 + Math.cos(an)*(16+u*16), hy-82 + Math.sin(an)*(16+u*16), 2.6, 2.6, '#ffe9a0');
+        }
+        octx.globalAlpha = 1;
+      } else if(kind === 'snow'){
+        fxA(fxLife(u, 0.15, 0.30)*0.9);
+        for(let i=0;i<18;i++){
+          const r1 = prand(i*5+2);
+          wpx(hx - 44 + r1*88, hy - 78 + uclamp((u*1.6 + r1) % 1)*78, 2.2, 2.2, '#ffffff');
+        }
+        octx.globalAlpha = 1;
+      }
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 从上落到手里（文件 / 证件 / 钥匙）
+function R_card(icon, c){
+  c = c || {};
+  return { dur:c.dur||1.5, aura:c.aura,
+    draw:function(hx,hy,u){
+      const g = fxEase(uclamp(u/0.5));
+      const x = hx + (c.ox == null ? 28 : c.ox);
+      const y = hy - (c.oy == null ? 36 : c.oy) - (c.top == null ? 48 : c.top)*(1-g);
+      fxIconA(icon, x, y, c.sc||2.5, fxLife(u, 0.10, 0.24));
+      if(c.spark) fxSparks(x, y, 5, c.sparkCol||['#ffe37a','#ffffff'], uclamp((u-0.4)/0.6), {spread:16, up:12, size:2});
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 图标上依次出现标记（对勾 / 叉）
+function R_marks(icon, c){
+  c = c || {};
+  return { dur:c.dur||1.6, aura:c.aura,
+    draw:function(hx,hy,u){
+      const x = hx + (c.ox||0), y = hy - (c.oy == null ? 46 : c.oy) - (c.rise||0)*fxEase(u);
+      fxIconA(icon, x, y, c.sc||2.6, fxLife(u, 0.1, 0.22));
+      const n = c.n || 3, col = c.markCol || '#7cf08a';
+      for(let i=0;i<n;i++){
+        const uu = uclamp((u - 0.25 - i*0.13)/0.25);
+        if(uu <= 0) continue;
+        fxA(uu*fxLife(u, 0.1, 0.25));
+        const mx = x - (n-1)*6 + i*12, my = y + 13;
+        if(c.cross){
+          wpx(mx-3, my-3, 3, 3, col); wpx(mx, my, 3, 3, col); wpx(mx+3, my+3, 3, 3, col);
+          wpx(mx+3, my-3, 3, 3, col); wpx(mx, my, 3, 3, col); wpx(mx-3, my+3, 3, 3, col);
+        } else {
+          wpx(mx-3, my, 3, 3, col); wpx(mx, my+2, 3, 3, col); wpx(mx+3, my-2, 3, 3, col);
+        }
+        octx.globalAlpha = 1;
+      }
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 一串图标向上升起（音符 / 记忆 / 药）
+function R_rise(icon, c){
+  c = c || {};
+  return { dur:c.dur||1.7, aura:c.aura,
+    draw:function(hx,hy,u){
+      const n = c.n || 4;
+      for(let i=0;i<n;i++){
+        const uu = uclamp((u - i*0.11)/0.7);
+        if(uu <= 0) continue;
+        const x = hx + (c.ox||0) + (i-(n-1)/2)*(c.gap||14) + Math.sin(uu*6+i)*4;
+        const y = hy - (c.oy == null ? 40 : c.oy) - uu*(c.rise == null ? 30 : c.rise);
+        fxIconA(icon, x, y, c.sc||2.0, fxLife(u, c.inK == null ? 0.10 : c.inK, 0.30)*0.95);
+      }
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 地面上一串脚印
+function R_steps(icon, c){
+  c = c || {};
+  return { dur:c.dur||1.6, aura:c.aura,
+    draw:function(hx,hy,u){
+      const n = c.n || 4;
+      for(let i=0;i<n;i++){
+        const uu = uclamp((u - i*0.13)/0.6);
+        if(uu <= 0) continue;
+        const x = hx + 8 + i*(c.gap||13);
+        const y = hy - 3 - Math.sin(uu*Math.PI)*3;
+        fxA(fxLife(u, 0.12, 0.30)*0.92);
+        wpx(x-3, y-6, 5, 6, c.col || '#ffffff');
+        wpx(x-3, y-6, 5, 2, c.col2 || '#cfe6ff');
+        octx.globalAlpha = 1;
+      }
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 上下箭头（升职 / 指标超标）
+function R_arrow(c){
+  c = c || {};
+  return { dur:c.dur||1.5, aura:c.aura,
+    draw:function(hx,hy,u){
+      const n = c.n || 4, up = c.dir !== -1, col = c.col || (up ? '#7cf08a' : '#ff7a7a');
+      for(let i=0;i<n;i++){
+        const uu = uclamp((u - i*0.10)/0.7);
+        const x = hx + (c.ox == null ? 30 : c.ox) + i*9;
+        const y = hy - 40 + (up ? -uu*30 : uu*26);
+        fxA(fxLife(u, 0.10, 0.30));
+        wpx(x-5, y, 10, 3, col);
+        if(up){ wpx(x-4, y-3, 8, 3, col); wpx(x-3, y-6, 6, 3, col); }
+        else  { wpx(x-4, y+3, 8, 3, col); wpx(x-3, y+6, 6, 3, col); }
+        octx.globalAlpha = 1;
+      }
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 睡着：飘 Z
+function R_zzz(c){
+  c = c || {};
+  return { dur:c.dur||1.8, aura:'sleep',
+    draw:function(hx,hy,u){
+      for(let i=0;i<3;i++){
+        const uu = uclamp((u - i*0.18)/0.75);
+        if(uu <= 0) continue;
+        const k = 2.2 + i*0.9;
+        const x = hx + 16 + uu*22 + i*5, y = hy - 62 - uu*22 - i*8;
+        fxA(fxLife(u, 0.10, 0.25));
+        wpx(x, y, 3*k, k, '#cfe6ff');
+        wpx(x+2*k, y+k, k, k, '#cfe6ff');
+        wpx(x+k, y+2*k, k, k, '#cfe6ff');
+        wpx(x, y+3*k, 3*k, k, '#cfe6ff');
+        octx.globalAlpha = 1;
+      }
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+// 声波电话
+function R_phone(c){
+  c = c || {};
+  return { dur:c.dur||1.6, aura:c.aura,
+    draw:function(hx,hy,u){
+      const x = hx + 34, y = hy - 36;
+      fxIconA('phone', x, y, 2.3, fxLife(u, 0.10, 0.22));
+      const col = c.col || '#7cf08a';
+      for(let i=0;i<3;i++){
+        const uu = uclamp((u - i*0.16)/0.7);
+        if(uu <= 0 || uu >= 1) continue;
+        fxRing(x, y, 8 + uu*22, col, (1-uu)*0.85, 1.5);
+      }
+    },
+    overlay: c.label ? fxLab(c) : null };
+}
+
+// ============================================================
+//  48 个任务 × 成功 / 失败
+// ============================================================
+const EVFX = {
+
+/* ---- 婴幼儿 ---- */
+milkOk: R_pop('milk', {aura:'heal', label:'喝饱了', labelCol:'#ffe9b0', sc:2.6, ox:16, spark:6, sparkCol:['#ffffff','#fff6e0']}),
+milkNo: R_drop('milk', {label:'洒了一身', labelCol:'#ffb4b4', sc:2.6, ox:6, debris:true, debrisN:9,
+                        debrisCol:['#ffffff','#e8f4ff','#cfe6ff'], ripple:true, rippleCol:'rgba(255,255,255,0.7)'}),
+
+momOk:  R_rings({aura:'power', label:'「妈——妈」', labelCol:'#ffe37a', col:'#ffe9b0', maxR:46, n:3, icon:'baby', oy:44}),
+momNo:  R_rings({aura:'sad', label:'没学会…', labelCol:'#ffb4b4', col:'#9aa0a6', maxR:28, n:2, oy:44}),
+
+zhouOk: R_pop('book', {aura:'sparkle', label:'抓到了书', labelCol:'#8ef09a', sc:2.8, ox:-16, spark:8, rise:22}),
+zhouNo: R_drop('book', {label:'抓空了', labelCol:'#ffb4b4', sc:2.6, ox:-8, debris:true, debrisN:6,
+                        debrisCol:['#f2c33d','#e0483c','#3f8fd8']}),
+
+stepOk: R_steps('ball', {aura:'sparkle', label:'第一步！', labelCol:'#8ef09a', n:4, col:'#ffffff'}),
+stepNo: R_drop('ball', {aura:'sad', label:'摔了一跤', labelCol:'#ffb4b4', sc:2.6, ox:14, bounce:true,
+                        debris:true, debrisN:5, debrisCol:['#ffffff','#ffd0e0','#cfe6ff']}),
+
+/* ---- 打疫苗：成功 = 注射 + 免疫护盾；失败 = 病毒缠身 ---- */
+vacOk:{ dur:1.9, aura:'shield', overlay:fxLab({label:'免疫 ✓', labelCol:'#8ef09a'}),
+  draw:function(hx,hy,u){
+    const g = fxEase(uclamp(u/0.32));
+    let sx, sa;
+    if(u < 0.62){ sx = hx + 46 - 30*g; sa = fxLife(u, 0.08, 0.0); }
+    else { const k2 = (u-0.62)/0.38; sx = hx + 16 + 44*k2; sa = Math.max(0, 1-k2); }
+    fxIconA('syringe', sx, hy-26, 2.4, sa);
+    // 推药：针管里的液柱缩短
+    if(u > 0.30 && u < 0.62){
+      fxA(0.95);
+      const k = (u-0.30)/0.32;
+      wpx(sx-8, hy-27, 6*(1-k)+1.5, 3.2, '#bfe6ff');
+      octx.globalAlpha = 1;
+    }
+    // 扎进去那一下的冲击
+    if(u > 0.34 && u < 0.60)
+      fxSparks(hx+16, hy-26, 6, ['#ffffff','#bfe6ff','#7fc8ff'], (u-0.34)/0.26, {spread:16, up:8, size:2.2});
+    // 免疫护盾从脚下升起
+    if(u > 0.55){
+      const k = uclamp((u-0.55)/0.45);
+      for(let i=0;i<22;i++){
+        const an = i/22*6.2832 + k*3;
+        fxA(fxLife(u, 0.55, 0.25)*0.92);
+        wpx(hx + Math.cos(an)*16*k, hy - 22 + Math.sin(an)*20*k, 2.6, 2.6, (i%2) ? '#bfe6ff' : '#7fc8ff');
+      }
+      octx.globalAlpha = 1;
+    }
+  }},
+
+vacNo:{ dur:2.0, aura:'sick', overlay:fxLab({label:'还是病倒了', labelCol:'#9df08a'}),
+  draw:function(hx,hy,u){
+    const n = 7;
+    for(let i=0;i<n;i++){
+      const r1 = prand(i*13+8);
+      const an = r1*6.2832;
+      const g = fxEase(uclamp(u/0.75));
+      const d = 56*(1 - g*0.66);
+      const x = hx + Math.cos(an)*d;
+      const y = hy - 34 + Math.sin(an)*d*0.5 + Math.sin(u*7 + i)*2.4;
+      fxIconA('virus', x, y, 1.8, fxLife(u, 0.10, 0.20)*0.95);
+    }
+    if(u > 0.35){
+      fxA(fxLife(u, 0.35, 0.30)*0.85);
+      for(let i=0;i<6;i++){
+        const r1 = prand(i*7+3);
+        wpx(hx - 12 + r1*24, hy - 16 - uclamp(((u-0.35)*1.5 + r1) % 1)*44, 2.8, 2.8, '#9df08a');
+      }
+      octx.globalAlpha = 1;
+    }
+  }},
+
+/* ---- 背书包：成功 = 书包背上肩；失败 = 书包掉地、书本撒一地 ---- */
+bagOk:{ dur:1.7, aura:'sparkle', overlay:fxLab({label:'背上了', labelCol:'#8ef09a'}),
+  draw:function(hx,hy,u){
+    const g = fxEase(uclamp(u/0.55));
+    const y = hy - 62 + 44*g;                 // 从上方落到背上
+    fxIconA('bag', hx - 7, y, 2.0, fxLife(u, 0.10, 0.20));
+    // 一条肩带绕过肩膀
+    if(g > 0.72){
+      fxA((g-0.72)/0.28*fxLife(u, 0.05, 0.25));
+      wpx(hx - 1, hy - 27, 3.2, 13, '#3a5fa0');
+      octx.globalAlpha = 1;
+    }
+    if(g > 0.9) fxSparks(hx - 7, hy - 30, 6, ['#ffe37a','#fff6c0','#ffffff'], uclamp((u-0.55)/0.45), {spread:22, up:14, size:2.2});
+  }},
+
+bagNo:{ dur:2.0, overlay:fxLab({label:'散了…', labelCol:'#ffb4b4'}),
+  draw:function(hx,hy,u){
+    const fall = fxEase(uclamp(u/0.4));
+    const bx = hx + 4;
+    const by = hy - 38*(1-fall) - 4;
+    fxIconA('bag', bx, by, 2.8, fxLife(u, 0.08, 0.22));
+    if(u > 0.36){
+      const ud = uclamp((u-0.36)/0.6);
+      const cols = ['#3f8fd8','#e0483c','#5cbf6a','#f2c33d','#a978d8','#ef8a3c'];
+      // 书本撒一地：位置用固定的伪随机，所以轨迹是稳定的抛物线
+      for(let i=0;i<7;i++){
+        const r1 = prand(i*5+2), r2 = prand(i*5+3);
+        const dir = (i%2) ? 1 : -1;
+        const dx = dir*(4 + ud*(14 + r1*44));
+        const dy = -ud*14 + ud*ud*(10 + r2*12);
+        fxA(fxLife(u, 0.36, 0.34));
+        wpx(bx+dx-3.5, hy-6+dy, 7, 5, cols[i % cols.length]);
+        wpx(bx+dx-3.5, hy-6+dy, 7, 1.6, '#ffffff');
+        octx.globalAlpha = 1;
+      }
+      if(ud < 0.6){
+        fxA((0.6-ud)/0.6*0.5);
+        fxRing(bx, hy-2, 5 + ud*50, 'rgba(255,255,255,0.55)', 1, 1.4);
+      }
+    }
+  }},
+
+/* ---- 小学 ---- */
+hwOk:   R_marks('paper', {aura:'sparkle', label:'作业完成', labelCol:'#8ef09a', n:3, markCol:'#7cf08a'}),
+hwNo:   R_crack('paper', {aura:'sad', label:'撕了…', labelCol:'#ffb4b4', n:10,
+                          cols:['#ffffff','#cfd6e6','#9aa0a6']}),
+
+poemOk: R_rise('book', {aura:'heal', label:'背下来了', labelCol:'#8ef09a', n:3, gap:18, rise:34, sc:1.8}),
+poemNo: R_crack('book', {aura:'sad', label:'一句也没记住', labelCol:'#ffb4b4', n:8,
+                         cols:['#ffffff','#cfd6e6','#9aa0a6']}),
+
+gymOk:  R_rings({aura:'power', label:'做得真齐', labelCol:'#8ef09a', col:'#ffe9b0', maxR:40, n:3, icon:'star', oy:44}),
+gymNo:  R_rings({aura:'sweat', label:'同手同脚…', labelCol:'#ffb4b4', col:'#9aa0a6', maxR:24, n:2, oy:44}),
+
+friendOk: R_two('heart', 'heart', {aura:'love', label:'朋友 +1', labelCol:'#ffc6dd', gap:36, spark:9}),
+friendNo: R_crack('heart', {aura:'broken', label:'没交到', labelCol:'#ffb4b4', n:8,
+                            cols:['#e0483c','#ff8a8a','#ffc6dd']}),
+
+gameOk: R_pop('gamepad', {aura:'sparkle', label:'好玩！', labelCol:'#8ef09a', sc:2.8, ox:-18, spark:8}),
+gameNo: R_crack('gamepad', {aura:'sad', label:'被没收了', labelCol:'#ffb4b4', n:9,
+                            cols:['#9aa0a6','#3a2b28','#cfd6e6']}),
+
+voteOk: R_meter({aura:'sparkle', label:'当选了 ✓', labelCol:'#8ef09a', col:'#7cf08a', w:58, fill:1, tick:true}),
+voteNo: R_meter({aura:'sad', label:'只有一票', labelCol:'#ffb4b4', col:'#ff8a8a', w:58, fill:0.12, tick:true}),
+
+/* ---- 中学 ---- */
+testOk: R_grow('star', {aura:'sparkle', label:'全对', labelCol:'#ffe37a', sc0:0.8, sc1:4.2, oy:44, spark:6}),
+testNo: R_crack('paper', {aura:'broken', label:'全错…', labelCol:'#ffb4b4', n:12,
+                          cols:['#ffffff','#ff8a8a','#ffc6dd']}),
+
+crushOk: R_throw('heart', {aura:'love', label:'心跳了一下', labelCol:'#ffc6dd', dir:1, dist:126, y0:38, arc:40, trail:'#ffc6dd'}),
+crushNo: R_crack('heart', {aura:'broken', label:'没敢说出口', labelCol:'#ffb4b4', n:8,
+                           cols:['#e0483c','#ff8a8a']}),
+
+nightOk: R_weather('night', {aura:'sparkle', label:'背完了', labelCol:'#8ef09a'}),
+nightNo: R_zzz({label:'睡着了…', labelCol:'#cfe6ff'}),
+
+gkOk: R_card('doc', {aura:'sparkle', label:'录取通知书', labelCol:'#8ef09a', oy:38, top:58, sc:2.6}),
+gkNo: R_marks('paper', {aura:'broken', label:'没考上', labelCol:'#ffb4b4', n:4, markCol:'#ff5a5a', cross:true}),
+
+gradOk: R_throw('cap', {aura:'sparkle', label:'毕业了', labelCol:'#8ef09a', dir:1, dist:58, y0:54, arc:58, trail:'#ffe37a'}),
+gradNo: R_drop('cap', {aura:'sad', label:'帽子没接住', labelCol:'#ffb4b4', sc:2.6, ox:12, bounce:true}),
+
+/* ---- 青年 ---- */
+resumeOk: R_throw('mail', {aura:'power', label:'已投递', labelCol:'#8ef09a', dir:1, dist:136, arc:30, y0:34}),
+
+resumeNo:{ dur:1.9, aura:'sad', overlay:fxLab({label:'已读不回', labelCol:'#ffb4b4'}),
+  draw:function(hx,hy,u){
+    const d = 72, out = fxEase(uclamp(u/0.45)), back = uclamp((u-0.5)/0.45);
+    const x = hx + 10 + d*out - d*1.1*back;
+    const y = hy - 34 - Math.sin(uclamp(u/0.5)*Math.PI)*26;
+    fxIconA('mail', x, y, 2.4, fxLife(u, 0.08, 0.20));
+    fxA(fxLife(u, 0.08, 0.30)*0.40);
+    for(let i=1;i<=4;i++){
+      const uu = uclamp(u - i*0.05);
+      wpx(hx + 10 + d*fxEase(uu) - d*1.1*uclamp((uu-0.5)/0.45),
+          hy - 34 - Math.sin(uclamp(uu/0.5)*Math.PI)*26, 1.7, 1.7, '#9aa0a6');
+    }
+    octx.globalAlpha = 1;
+  }},
+
+itvOk: R_card('doc', {aura:'power', label:'拿到 offer', labelCol:'#8ef09a', oy:38, top:52, sc:2.6}),
+itvNo: R_marks('doc', {aura:'sad', label:'婉拒了', labelCol:'#ffb4b4', n:2, markCol:'#ff5a5a', cross:true}),
+
+rentOk: R_card('key', {aura:'sparkle', label:'有地方住了', labelCol:'#8ef09a', oy:36, top:46, sc:2.8}),
+rentNo: R_drop('key', {aura:'sad', label:'没租到', labelCol:'#ffb4b4', sc:2.8, ox:14, bounce:true,
+                       debris:true, debrisN:5, debrisCol:['#a97a4a','#9aa0a6']}),
+
+otOk: R_weather('sun', {aura:'power', label:'天亮了', labelCol:'#ffe37a'}),
+
+otNo:{ dur:2.0, aura:'sleep', overlay:fxLab({label:'蓝屏了', labelCol:'#9fd4ff'}),
+  draw:function(hx,hy,u){
+    const x = hx + 30, y = hy - 40;
+    fxA(fxLife(u, 0.10, 0.25));
+    wpx(x-15, y-12, 30, 24, '#1b3a7a');
+    for(let i=0;i<20;i++){
+      const r1 = prand(i*3+1), r2 = prand(i*3+2);
+      if(((i + Math.floor(u*12)) % 3) === 0) wpx(x-13 + r1*26, y-10 + r2*20, 2.4, 2.4, '#eaf3ff');
+    }
+    wpx(x-17, y+12, 34, 3, '#3a3a44');
+    octx.globalAlpha = 1;
+  }},
+
+loveOk: R_two('heart', 'heart', {aura:'love', label:'在一起了', labelCol:'#ffc6dd', gap:32, spark:12,
+                                 sparkCol:['#ffc6dd','#ff8a8a','#ffe37a']}),
+loveNo: R_crack('heart', {aura:'broken', label:'还是散了', labelCol:'#ffb4b4', n:9,
+                          cols:['#e0483c','#ff8a8a','#ffc6dd']}),
+
+saveOk: R_stack('coin', {aura:'money', label:'攒够了', labelCol:'#ffe37a', n:7, ox:26, step:5, spark:6}),
+saveNo: R_drop('coin', {aura:'sad', label:'没攒住', labelCol:'#ffb4b4', bounce:true,
+                        debris:true, debrisN:10, debrisCol:['#f2c33d','#ffe37a','#c99a20']}),
+
+houseOk: R_card('doc', {aura:'sparkle', label:'房产证到手', labelCol:'#8ef09a', oy:38, top:56, sc:2.6}),
+houseNo: R_marks('house', {aura:'sad', label:'被别人买走了', labelCol:'#ffb4b4', n:1, ox:34,
+                           markCol:'#ff5a5a', cross:true}),
+
+ringOk: R_card('ring', {aura:'love', label:'我愿意', labelCol:'#ffc6dd', oy:36, top:44, sc:2.8}),
+ringNo: R_drop('ring', {aura:'sad', label:'掉了…', labelCol:'#ffb4b4', sc:2.8, ox:16, bounce:true,
+                        debris:true, debrisN:4, debrisCol:['#f2c33d','#ffffff']}),
+
+babyOk: R_pop('baby', {aura:'love', label:'抱起来了', labelCol:'#ffc6dd', sc:2.8, ox:16, spark:8}),
+babyNo: R_swarm('baby', {aura:'sad', label:'手忙脚乱', labelCol:'#ffb4b4', n:3, sc:2.0, r0:44}),
+
+carOk: R_throw('car', {aura:'power', label:'新车！', labelCol:'#8ef09a', dir:1, dist:150, y0:16, arc:6, sc:2.2, trail:'#ff6a6a'}),
+
+carNo:{ dur:2.0, aura:'sad', overlay:fxLab({label:'抛锚了', labelCol:'#ffb4b4'}),
+  draw:function(hx,hy,u){
+    const x = hx + 42, y = hy - 12;
+    fxIconA('car', x, y, 2.2, fxLife(u, 0.10, 0.25));
+    fxA(fxLife(u, 0.15, 0.30)*0.78);
+    for(let i=0;i<10;i++){
+      const r1 = prand(i*7+1);
+      const v = uclamp((u*1.4 + r1) % 1);
+      const s2 = 4 + v*10;
+      wpx(x - 6 + r1*4 - v*10, y - 12 - v*38, s2, s2, (i%3) ? '#6b6b76' : '#3a3a44');
+    }
+    octx.globalAlpha = 1;
+  }},
+
+/* ---- 中年 ---- */
+loanOk: R_meter({aura:'heal', label:'终于还清了', labelCol:'#8ef09a', col:'#7cf08a', w:58, shrink:true, tick:true}),
+loanNo: R_stack('paper', {aura:'sad', label:'账单越来越多', labelCol:'#ffb4b4', n:7, ox:30, step:6}),
+
+tutorOk: R_two('book', 'star', {aura:'sparkle', label:'听懂了 ✓', labelCol:'#8ef09a', gap:30, spark:8}),
+tutorNo: R_weather('cloud', {aura:'rage', label:'气到拍桌', labelCol:'#ffb4b4'}),
+
+promoOk: R_arrow({aura:'power', label:'升职了', labelCol:'#8ef09a', dir:1, n:4, col:'#7cf08a'}),
+promoNo: R_arrow({aura:'sad', label:'没升上去', labelCol:'#ffb4b4', dir:-1, n:4, col:'#ff7a7a'}),
+
+toastOk: R_two('cup', 'cup', {aura:'power', label:'干杯！', labelCol:'#8ef09a', gap:30, spark:7}),
+toastNo: R_swarm('cup', {aura:'sick', label:'喝趴了', labelCol:'#ffb4b4', n:4, sc:1.8, r0:40}),
+
+healthOk: R_marks('cross', {aura:'heal', label:'一切正常', labelCol:'#8ef09a', n:3, markCol:'#7cf08a'}),
+healthNo: R_arrow({aura:'sick', label:'几项超标', labelCol:'#ffb4b4', dir:-1, n:5, col:'#ff7a7a', ox:26}),
+
+dinnerOk: R_pop('cup', {aura:'heal', label:'一家人', labelCol:'#ffe9b0', sc:2.6, ox:14, spark:6}),
+
+dinnerNo:{ dur:2.0, aura:'sad', overlay:fxLab({label:'一个人', labelCol:'#ffb4b4'}),
+  draw:function(hx,hy,u){
+    const x = hx + 34, y = hy - 8;
+    fxIconA('cup', x, y, 2.4, fxLife(u, 0.10, 0.25));
+    fxA(fxLife(u, 0.25, 0.30)*0.9);
+    wpx(x+24, y-14, 3, 14, '#6b5138'); wpx(x+36, y-14, 3, 14, '#6b5138');
+    wpx(x+22, y-18, 20, 3, '#8a6a48'); wpx(x+22, y-12, 20, 3, '#8a6a48');
+    octx.globalAlpha = 1;
+  }},
+
+reunionOk:{ dur:1.8, aura:'sparkle', overlay:fxLab({label:'合个影', labelCol:'#8ef09a'}),
+  draw:function(hx,hy,u){
+    if(u > 0.25 && u < 0.50){
+      const k = 1 - Math.abs((u-0.375)/0.125);
+      fxA(k*0.8);
+      wpx(hx-54, hy-76, 108, 76, '#ffffff');
+      octx.globalAlpha = 1;
+    }
+    for(let i=0;i<4;i++){
+      const uu = uclamp((u - i*0.06)/0.4);
+      if(uu <= 0) continue;
+      const x = hx - 30 + i*20, y = hy - 26*(1-fxEase(uu));
+      fxA(fxLife(u, 0.10, 0.25));
+      wpx(x-6, y-8, 12, 12, '#f7cfa4');
+      wpx(x-7, y-11, 14, 5, ['#2b2b33','#3a3a44','#c8c8cf','#2b2b33'][i%4]);
+      wpx(x-3, y-4, 2, 2, '#2b2b33'); wpx(x+1, y-4, 2, 2, '#2b2b33');
+      wpx(x-2, y+1, 4, 2, '#8a3a3a');
+      octx.globalAlpha = 1;
+    }
+  }},
+
+reunionNo:{ dur:1.9, aura:'sad', overlay:fxLab({label:'都在看手机', labelCol:'#ffb4b4'}),
+  draw:function(hx,hy,u){
+    for(let i=0;i<4;i++){
+      const x = hx - 30 + i*20, y = hy - 26;
+      fxA(fxLife(u, 0.10, 0.30));
+      wpx(x-6, y-8, 12, 12, '#f7cfa4');
+      wpx(x-7, y-11, 14, 5, ['#2b2b33','#3a3a44','#c8c8cf','#2b2b33'][i%4]);
+      wpx(x-3, y-4, 2, 2, '#2b2b33'); wpx(x+1, y-4, 2, 2, '#2b2b33');
+      // 手机冷光打在脸上
+      const k = 0.55 + 0.45*Math.sin(u*10 + i*1.7);
+      wpx(x-4, y+2, 9, 2, 'rgba(207,230,255,' + k.toFixed(2) + ')');
+      wpx(x-3, y+5, 7, 5, '#cfe6ff');
+      octx.globalAlpha = 1;
+    }
+  }},
+
+gym2Ok: R_pop('ball', {aura:'muscle', label:'有劲儿了', labelCol:'#8ef09a', sc:2.8, ox:-16, spark:8, sparkCol:['#ff8a8a','#ffe37a','#fff']}),
+gym2No: R_drop('ball', {aura:'sad', label:'卡再没打开过', labelCol:'#ffb4b4', bounce:true}),
+
+farewellOk: R_grow('flower', {aura:'ghost', label:'送您到这', labelCol:'#ffe9b0', sc0:1.2, sc1:2.6,
+                              petals:['#ffc6dd','#fff6c0','#ffffff']}),
+farewellNo: R_drop('flower', {aura:'sad', label:'花掉了', labelCol:'#ffb4b4', bounce:true,
+                              debris:true, debrisN:6, debrisCol:['#f2a7c3','#ffffff','#5cbf6a']}),
+
+debtOk: R_phone({aura:'heal', label:'挂断了', labelCol:'#8ef09a', col:'#7cf08a'}),
+debtNo: R_swarm('phone', {aura:'rage', label:'铃声不停', labelCol:'#ffb4b4', n:4, sc:1.8, r0:40}),
+
+/* ---- 老年 ---- */
+retireOk: R_pop('clock', {aura:'sparkle', label:'退休了', labelCol:'#8ef09a', sc:2.8, ox:18, spark:7, rise:24}),
+retireNo: R_stack('paper', {aura:'sad', label:'又被叫回去了', labelCol:'#ffb4b4', n:6, ox:30}),
+
+danceOk: R_rise('note', {aura:'power', label:'跟上拍子', labelCol:'#8ef09a', n:5, gap:16, rise:34, sc:1.9}),
+danceNo: R_rise('cross', {aura:'sad', label:'踩到脚了', labelCol:'#ffb4b4', n:3, gap:18, rise:24, sc:1.9}),
+
+grandOk: R_two('baby', 'heart', {aura:'love', label:'抱到孙子了', labelCol:'#ffc6dd', gap:28, spark:10}),
+grandNo: R_drop('baby', {aura:'sad', label:'哭个不停', labelCol:'#ffb4b4', sc:2.6, ox:14, bounce:true}),
+
+travelOk: R_pop('car', {aura:'sparkle', label:'出门看世界', labelCol:'#8ef09a', sc:2.8, ox:22, spark:7, rise:22}),
+travelNo: R_drop('car', {aura:'sad', label:'轮子掉了', labelCol:'#ffb4b4', ox:18, bounce:true,
+                         debris:true, debrisN:4, debrisCol:['#3a3a44','#9aa0a6']}),
+
+flowerOk: R_grow('flower', {aura:'heal', label:'开花了', labelCol:'#8ef09a', sc0:0.9, sc1:3.6,
+                            petals:['#ffc6dd','#fff6c0','#ff8a8a','#ffffff'], lift:14}),
+flowerNo: R_drop('flower', {aura:'sad', label:'没养活', labelCol:'#ffb4b4', bounce:true,
+                            debris:true, debrisN:6, debrisCol:['#c8a050','#a08040','#8a6a48']}),
+
+pillOk: R_rise('pill', {aura:'heal', label:'按时吃了', labelCol:'#8ef09a', n:4, gap:15, rise:26, sc:1.9}),
+pillNo: R_drop('pill', {aura:'sad', label:'药撒了一地', labelCol:'#ffb4b4', bounce:true,
+                        debris:true, debrisN:9, debrisCol:['#ffffff','#e8f4ff','#f2a7c3']}),
+
+aloneOk: R_pop('cup', {aura:'heal', label:'吃完了', labelCol:'#ffe9b0', sc:2.6, ox:14, spark:4}),
+aloneNo: R_weather('rain', {aura:'sad', label:'剩了一半', labelCol:'#ffb4b4'}),
+
+sunsetOk:{ dur:2.1, aura:'sparkle', overlay:fxLab({label:'好看', labelCol:'#ffd08a'}),
+  draw:function(hx,hy,u){
+    const g = fxEase(uclamp(u/0.7));
+    const x = hx + 48, y = hy - 86 + g*18;
+    drawDisc(x, y, 13*(1 - 0.15*g), '#ff9a5c', '#ffd08a');
+    fxA(fxLife(u, 0.2, 0.3)*0.30);
+    for(let i=0;i<10;i++) wpx(0, hy - 42 + i*5, WW, 5, '#ffb066');
+    octx.globalAlpha = 1;
+    if(u > 0.55 && u < 0.72){
+      const k = 1 - Math.abs((u-0.635)/0.085);
+      fxA(k*0.7); wpx(0, 0, WW, WH, '#ffffff'); octx.globalAlpha = 1;
+    }
+  }},
+
+sunsetNo:{ dur:2.0, aura:'sad', overlay:fxLab({label:'云挡住了', labelCol:'#9aa0a6'}),
+  draw:function(hx,hy,u){
+    const g = fxEase(uclamp(u/0.55));
+    const x = hx + 48, y = hy - 86;
+    drawDisc(x, y, 13, '#c98a52', '#8a6a48');
+    const cx2 = x - 62 + g*66;
+    wpx(cx2-26, y-4, 52, 11, '#5a6478');
+    wpx(cx2-16, y-12, 34, 9, '#6b7588');
+    fxA(fxLife(u, 0.15, 0.3)*0.35);
+    for(let i=0;i<12;i++){
+      const r1 = prand(i*3+1);
+      wpx(hx-40 + r1*90, hy-70 + uclamp((u*2 + r1) % 1)*60, 1.6, 7, '#8fd0ff');
+    }
+    octx.globalAlpha = 1;
+  }},
+
+callOk: R_two('phone', 'heart', {aura:'love', label:'接通了', labelCol:'#8ef09a', gap:30, spark:8}),
+callNo: R_phone({aura:'sad', label:'无人接听', labelCol:'#ffb4b4', col:'#ff5a5a'}),
+
+/* ---- 临终 ---- */
+breathOk:{ dur:2.0, aura:'heal', overlay:fxLab({label:'还撑得住', labelCol:'#8ef09a'}),
+  draw:function(hx,hy,u){
+    const x0 = hx - 40, y0 = hy - 68, w = 80;
+    fxA(0.32); wpx(x0, y0-1, w, 12, 'rgba(0,0,0,0.5)'); octx.globalAlpha = 1;
+    for(let i=0;i<w;i++){
+      const v = i/w, ph = (v*3 - u*3) % 1;
+      let yy = 0;
+      if(ph < 0.06) yy = -4;
+      else if(ph < 0.12) yy = 6;
+      else if(ph < 0.18) yy = -9;
+      else if(ph < 0.24) yy = 3;
+      fxA(fxLife(u, 0.10, 0.25));
+      wpx(x0 + i, y0 + 5 + yy, 1.4, 1.4, '#7cf08a');
+    }
+    octx.globalAlpha = 1;
+  }},
+
+breathNo:{ dur:2.1, aura:'sick', overlay:fxLab({label:'喘不上气', labelCol:'#ffb4b4'}),
+  draw:function(hx,hy,u){
+    const x0 = hx - 40, y0 = hy - 68, w = 80;
+    fxA(0.32); wpx(x0, y0-1, w, 12, 'rgba(0,0,0,0.5)'); octx.globalAlpha = 1;
+    const g = uclamp(u/0.85);
+    for(let i=0;i<w;i++){
+      const v = i/w;
+      const amp = 9*(1-g) + 1.5;
+      let yy = Math.sin(v*24 - u*18)*amp*(0.4 + prand(i)*0.9);
+      if(g > 0.72) yy = Math.sin(v*40 - u*30)*amp*0.28;
+      fxA(fxLife(u, 0.10, 0.20));
+      wpx(x0 + i, y0 + 5 + yy, 1.4, 1.4, g > 0.70 ? '#ff7a7a' : '#ffd24a');
+    }
+    octx.globalAlpha = 1;
+  }},
+
+memOk: R_rise('star', {aura:'ghost', label:'想起了很多', labelCol:'#cfe6ff', n:6, gap:15, rise:40, sc:1.8}),
+memNo: R_weather('snow', {aura:'ghost', label:'想不起来了', labelCol:'#9aa0a6'})
+
+};
+
+// 兜底（万一某个事件忘了配）
+const DEF_OK = { tap:'gymOk', rapid:'hwOk', hold:'stepOk', drag:'bagOk', pick:'voteOk' };
+const DEF_NO = { tap:'gymNo', rapid:'hwNo', hold:'stepNo', drag:'bagNo', pick:'voteNo' };
+
+function playEvFX(id, ok, e){
+  const d = EVFX[id];
+  if(!d) return;
+  evFX.push({ id:id, d:d, t:0, dur:d.dur||1.5, ok:ok, e:e });
+  if(evFX.length > 3) evFX.shift();
+  if(d.aura) heroAura = { kind:d.aura, t:0, dur:d.auraDur || d.dur || 1.5 };
+}
+function stepEvFX(dt){
+  if(fxFreeze) return;
+  for(let i=evFX.length-1;i>=0;i--){
+    const f = evFX[i];
+    f.t += dt;
+    if(f.t >= f.dur) evFX.splice(i,1);
+  }
+  if(heroAura){
+    heroAura.t += dt;
+    if(heroAura.t >= heroAura.dur) heroAura = null;
+  }
+}
+function drawEvFX(hx, hy){
+  for(const f of evFX){
+    octx.save();
+    try { f.d.draw(hx, hy, uclamp(f.t/f.dur), f.t, f); } catch(err){}
+    octx.restore();
+    octx.globalAlpha = 1;
+  }
+}
+function drawEvFXOverlay(hx, hy){
+  if(!evFX.length) return;
+  ctx.save();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for(const f of evFX){
+    if(!f.d.overlay) continue;
+    try { f.d.overlay(hx, hy, uclamp(f.t/f.dur), f); } catch(err){}
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+// 挂在小人身上的临时状态（免疫光环 / 病气 / 睡着…）
+function drawHeroAura(hx, hy, s){
+  if(!heroAura) return;
+  const t = heroAura.t, u = uclamp(t/heroAura.dur);
+  const k = fxLife(u, 0.16, 0.28);
+  const cy = hy - 22*s;
+  switch(heroAura.kind){
+    case 'shield':
+      for(let i=0;i<20;i++){
+        const an = i/20*6.2832 + t*2.4;
+        fxA(k*0.85);
+        wpx(hx + Math.cos(an)*17*s, cy + Math.sin(an)*21*s, 2.4*s, 2.4*s, (i%2) ? '#bfe6ff' : '#7fc8ff');
+      }
+      octx.globalAlpha = 1;
+      break;
+    case 'sick':
+      fxA(k*0.8);
+      for(let i=0;i<7;i++){
+        const r1 = prand(i*9+4);
+        wpx(hx - 13*s + r1*26*s, cy + 14*s - uclamp((u*1.4 + r1) % 1)*34*s, 2.6*s, 2.6*s, '#9df08a');
+      }
+      octx.globalAlpha = 1;
+      break;
+    case 'heal':
+    case 'sparkle': {
+      const cols = heroAura.kind === 'heal' ? ['#9df08a','#d6ffcf','#ffffff'] : ['#ffe37a','#fff6c0','#ffffff'];
+      for(let i=0;i<6;i++){
+        const r1 = prand(i*7+2);
+        fxA(k*0.85);
+        wpx(hx - 15*s + r1*30*s, hy - 4 - uclamp((u*1.5 + r1) % 1)*46*s, 2.6*s, 2.6*s, cols[i%cols.length]);
+      }
+      octx.globalAlpha = 1;
+      break;
+    }
+    case 'sleep':
+      fxA(k*0.9);
+      wpx(hx + 9*s, cy - 6*s, 5*s, 5*s, '#cfe6ff');
+      wpx(hx + 12*s, cy - 9*s, 5*s, 5*s, '#cfe6ff');
+      octx.globalAlpha = 1;
+      break;
+    case 'rage':
+      fxA(k*0.8);
+      for(let i=0;i<4;i++){
+        const r1 = prand(i*11+5);
+        wpx(hx - 8*s + r1*16*s, cy - 12*s - uclamp((u*2 + r1) % 1)*12*s, 3.4*s, 3.4*s, '#ff8a5a');
+      }
+      octx.globalAlpha = 1;
+      break;
+    case 'sweat':
+      fxA(k*0.9);
+      for(let i=0;i<3;i++){
+        const r1 = prand(i*13+6);
+        wpx(hx - 12*s + r1*24*s, cy - 2*s - uclamp((u*1.8 + r1) % 1)*18*s, 2.6*s, 4*s, '#7fd4ff');
+      }
+      octx.globalAlpha = 1;
+      break;
+    case 'broken':
+      fxA(k*0.9);
+      wpx(hx - 8*s, cy - 16*s, 6*s, 6*s, '#e0483c');
+      wpx(hx + 2*s, cy - 16*s, 6*s, 6*s, '#e0483c');
+      wpx(hx - 6*s, cy - 12*s, 4*s, 4*s, '#ff8a8a');
+      wpx(hx + 2*s, cy - 12*s, 4*s, 4*s, '#ff8a8a');
+      octx.globalAlpha = 1;
+      break;
+    case 'love':
+      fxA(k*0.9);
+      for(let i=0;i<3;i++){
+        const an = t*3 + i*2.094;
+        wpx(hx + Math.cos(an)*14*s, cy - 10*s + Math.sin(an)*5*s, 3.4*s, 3.4*s, '#ffc6dd');
+      }
+      octx.globalAlpha = 1;
+      break;
+    case 'money':
+      fxA(k*0.9);
+      for(let i=0;i<3;i++){
+        const an = t*3.4 + i*2.094;
+        wpx(hx + Math.cos(an)*15*s, cy - 8*s + Math.sin(an)*6*s, 3.4*s, 3.4*s, '#ffe37a');
+      }
+      octx.globalAlpha = 1;
+      break;
+    case 'ghost':
+      fxA(k*0.55);
+      wpx(hx - 10*s, cy - 12*s, 20*s, 34*s, '#cfe6ff');
+      octx.globalAlpha = 1;
+      break;
+    case 'muscle':
+      fxA(k*0.85);
+      wpx(hx - 15*s, cy + 2*s, 4*s, 12*s, '#ff8a5a');
+      wpx(hx + 11*s, cy + 2*s, 4*s, 12*s, '#ff8a5a');
+      octx.globalAlpha = 1;
+      break;
+    case 'power':
+      fxA(k*0.8);
+      for(let i=0;i<4;i++){
+        const an = t*4 + i*1.57;
+        wpx(hx + Math.cos(an)*13*s, cy - 10*s + Math.sin(an)*6*s, 3*s, 3*s, '#ffe9b0');
+      }
+      octx.globalAlpha = 1;
+      break;
+    case 'sad':
+      fxA(k*0.9);
+      wpx(hx + 8*s, hy - 30*s, 2.8*s, 4.2*s, '#7fd4ff');
+      octx.globalAlpha = 1;
+      break;
+  }
+}
+
 function drawHero(age, walking, cx, feetY, extra){
   const A = Math.max(0, Math.min(85, age));
   const pose = heroPose();
@@ -715,6 +1730,7 @@ function drawHero(age, walking, cx, feetY, extra){
       wpx(bx-2, by-19.5+wob, 4, 2, talkT > 0 ? '#8a3a3a' : '#d99a8a');
     }
     if(react) drawHeroFX(bx, by, 0.8, pose, heroAnim.t/heroAnim.dur);
+    drawHeroAura(bx, by, 0.85);
     return;
   }
 
@@ -844,6 +1860,8 @@ function drawHero(age, walking, cx, feetY, extra){
 
   // ---- 反应特效 ----
   if(react) drawHeroFX(x, y, s, pose, heroAnim.t/heroAnim.dur);
+  // ---- 任务结果带来的临时状态（免疫护盾 / 病气 / 睡着…）----
+  drawHeroAura(x, y, s);
 }
 let talkT = 0;
 
@@ -872,6 +1890,7 @@ function resetGame(){
     e.correct=null; e.chosenIdx=-1; e._kept=false;
   }
   heroAnim = null;
+  evFX.length = 0; heroAura = null;
   gt = 0; score = 0; combo = 0; maxCombo = 0; done = 0; missed = 0;
   worldX = 0; animT = 0; chosen = null; endT = 0; flashT = 0; shakeT = 0;
   lastTheme = -1;
@@ -913,6 +1932,8 @@ function complete(e, good){
     score += 100 + Math.min(combo,10)*20;
     spawnParticles(e.x, e.y, '#ffe37a', 10);
     spawnParticles(150, GROUND-34, '#fff2b0', 6);
+    // 这件任务专属的「成功」动画
+    playEvFX(e.ok || DEF_OK[e.type], true, e);
     // 按住/拖拽在过程中已经演过"使劲"了，完成时给个庆祝的小跳
     let kk = RKIND[e.type] || 'hop';
     if(e.type === 'hold' || e.type === 'drag') kk = 'hop';
@@ -926,6 +1947,8 @@ function fail(e){
   missed++; combo = 0;
   spawnParticles(e.x, e.y, '#ff8a8a', 8);
   spawnParticles(150, GROUND-30, '#bfd8ff', 6);
+  // 这件任务专属的「失败」动画
+  playEvFX(e.no || DEF_NO[e.type], false, e);
   heroReact(e.type === 'pick' ? 'dizzy' : 'stumble');
   SFX.bad(); gibberish(3, 300);
   shakeT = 0.2;
@@ -1114,6 +2137,7 @@ function loop(now){
 function update(dt){
   animT += dt;
   if(heroAnim && !animFreeze){ heroAnim.t += dt; if(heroAnim.t >= heroAnim.dur) heroAnim = null; }
+  stepEvFX(dt);
   musicTick();
   if(talkT > 0) talkT -= dt;
   if(flashT > 0) flashT -= dt;
@@ -1137,7 +2161,7 @@ function update(dt){
 
     // 激活 / 超时判定
     for(const e of LIFE){
-      if(e.state === 'pending' && gt >= e.start){
+      if(e.state === 'pending' && gt >= e.start && !noSpawn){
         activate(e); active.push(e);
       }
       if(e.state === 'active'){
@@ -1245,6 +2269,9 @@ function render(){
     wpx(pt.x-1.5, pt.y-1.5, 3, 3, pt.c);
     octx.globalAlpha = 1;
   }
+
+  // 任务结果动画（成功 / 失败），锚在小人身上
+  if(state === 'play') drawEvFX(heroX, GROUND);
   octx.restore();
 
   // ---------- 合成到主画布 ----------
@@ -1264,6 +2291,8 @@ function render(){
       drawEventLabel(e);
     }
   }
+  // 任务结果的小字（画在主画布上才清晰）
+  if(state === 'play') drawEvFXOverlay(heroX, GROUND);
   ctx.restore();
 
   // ---------- 闪白 / 叠加 ----------
@@ -1734,6 +2763,7 @@ function wrapText(text, x, y, maxW, lh){
 //     &screen=final / result / menu
 //     &mute        静音
 //     &anim=lunge&ap=0.4   定格在小人的某个动作（用于检查动画）
+//     &fx=vacOk&ap=0.5     定格某个任务的成功/失败动画（&ok=0 强制看失败版）
 // ------------------------------------------------------------
 (function debugEntry(){
   const q = location.search + location.hash;
@@ -1771,6 +2801,19 @@ function wrapText(text, x, y, maxW, lh){
       animFreeze = true;
       heroAnim.t = heroAnim.dur * (mp ? parseFloat(mp[1]) : 0.4);
     }
+  }
+  // 定格某个任务的成功 / 失败特效，用于逐帧检查
+  const mf = /[?&#]fx=(\w+)/.exec(q);
+  if(mf){
+    noSpawn = true;
+    startGame(); noSpawn = true;
+    if(!mt){ gt = 30; worldX = 30*44; }
+    playEvFX(mf[1], !/[?&#]ok=0/.test(q), null);
+    const ff = evFX[evFX.length-1];
+    const prog = mp ? parseFloat(mp[1]) : 0.42;
+    if(ff){ fxFreeze = true; ff.t = ff.dur * prog; }
+    if(heroAura) heroAura.t = heroAura.dur * prog;
+    if(heroAnim) heroAnim.t = heroAnim.dur * prog;
   }
 })();
 
