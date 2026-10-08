@@ -105,14 +105,21 @@ Themes of mortality, aging and loss; a mild, non-graphic depiction of a characte
 ## 【Price】
 Free — **or** "Name your own price" (suggested: $0 with an optional tip). It's a self-contained, single-file experience; pay-what-you-want fits a 100-second game well.
 
-## 【Screenshot captions】(if you upload the PNGs in the repo)
-1. *100 seconds. One life. 48 things to get done.*
-2. *Tap, mash, hold, drag, choose — the windows keep closing.*
-3. *Drop something? It stays on the ground and drifts into the past.*
-4. *Get it right and someone walks beside you.*
-5. *Eight cards. You may take only one.*
-6. *Then you're graded — from "Winner at life" to "A walking husk."*
-7. *Playable in English, 中文, 日本語 and Русский.*
+## 【Screenshots】(ready to upload from `dist/`, 1440×810)
+
+| File | Caption |
+|---|---|
+| `dist/shot-1-menu.png` | 100 seconds. One life. Pick your language and begin. |
+| `dist/shot-2-play.png` | Tap, mash, hold, drag, choose — the windows keep closing. |
+| `dist/shot-3-mates.png` | Get it right and someone walks beside you. |
+| `dist/shot-4-debris.png` | Drop something? It stays on the ground and drifts into the past. |
+| `dist/shot-5-final.png` | Eight cards. You may take only one. |
+| `dist/shot-6-result.png` | Then you're graded — from "Winner at life" to "A walking husk." |
+| `dist/shot-7-ja.png` | 日本語対応 — full Japanese localization. |
+| `dist/shot-8-ru.png` | Полная русская локализация — and 中文 too. |
+
+> The game runs at a 480×270 pixel canvas and is always displayed at an integer
+> upscale, so screenshots come out crisp at any size. 1440×810 = exactly 3×.
 
 ---
 ---
@@ -216,14 +223,21 @@ Free — **or** "Name your own price" (suggested: $0 with an optional tip). It's
 ## 【价格】
 免费 —— 或选择「Name your own price」（建议 $0 + 可选打赏）。它是一段自成体系、单文件、随时能玩完的体验，随缘付费很适合一个 100 秒的游戏。
 
-## 【截图配文】（如果上传仓库里的 PNG）
-1. *100 秒，一辈子。48 件要做的事。*
-2. *点、连点、按住、拖拽、选择——窗口一个比一个急。*
-3. *掉在地上的东西不会消失，它跟着背景慢慢退向过去。*
-4. *做对了，会有人陪你一起走。*
-5. *八张卡片。你只能带走一样。*
-6. *然后你被评分——从「人生赢家」到「一具行走的躯壳」。*
-7. *支持 English、中文、日本語、Русский。*
+## 【截图】（现成的，在 `dist/` 里，1440×810）
+
+| 文件 | 配文 |
+|---|---|
+| `dist/shot-1-menu.png` | 100 秒，一辈子。选好语言就开始。 |
+| `dist/shot-2-play.png` | 点、连点、按住、拖拽、选择——窗口一个比一个急。 |
+| `dist/shot-3-mates.png` | 做对了，会有人陪你一起走。 |
+| `dist/shot-4-debris.png` | 掉在地上的东西不会消失，它跟着背景慢慢退向过去。 |
+| `dist/shot-5-final.png` | 八张卡片。你只能带走一样。 |
+| `dist/shot-6-result.png` | 然后你被评分——从「人生赢家」到「一具行走的躯壳」。 |
+| `dist/shot-7-ja.png` | 日本語対応——完整日语本地化。 |
+| `dist/shot-8-ru.png` | Полная русская локализация——当然还有中文。 |
+
+> 游戏内部是 480×270 的像素画布，永远按整数倍放大显示，所以任何尺寸截图都清晰。
+> 1440×810 正好是 3 倍。
 
 ---
 ---
@@ -237,3 +251,21 @@ Free — **or** "Name your own price" (suggested: $0 with an optional tip). It's
 **中文**
 - 100 秒过完一辈子，48 件事劈头盖脸砸过来。你来得及做完多少？
 - 一个像素小人，一百秒，一辈子。走到墓碑前，你只能带走一样东西。
+
+---
+
+# 附：上传清单 / Upload checklist
+
+上传时 itch.io 后台还需要这几项，留意一下：
+
+| 项目 | 说明 |
+|---|---|
+| **Cover image** | **必填**，建议 630×500（≥315×250）。目前仓库里还没有，可以用 `dist/shot-5-final.png` 或 `shot-2-play.png` 临时顶替，也可以单独做一张标题卡。 |
+| **Screenshots** | `dist/shot-1..8*.png`，8 张 1440×810，直接拖进上传框。 |
+| **Kind of project** | `HTML` （itch.io 会直接托管、在浏览器里跑）。 |
+| **Uploads** | 把 `life-game.html` **改名成 `index.html`** 再压缩成 zip 上传——itch.io 默认只认 zip 根目录下的 `index.html`。 |
+| **Viewport / Embed** | 建议勾选 `Mobile friendly` 并让画面自适应；游戏本身已经处理了触摸与缩放。 |
+| **Pricing** | Free 或 Name your own price。 |
+| **Languages** | English / Chinese (Simplified) / Japanese / Russian。 |
+
+> 单文件、零依赖，所以 zip 里只有 `index.html` 一个文件就够，体积很小。

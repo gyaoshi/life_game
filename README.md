@@ -21,7 +21,8 @@ python -m http.server 8000
 支持 **中文 / English / 日本語 / Русский** 四种语言，开始界面和结算界面都能随时切换；
 首次进入会按浏览器语言自动选择。
 
-itch.io 商店页文案素材见 [`itch-io-page.md`](itch-io-page.md)（英文 + 中文）。
+itch.io 商店页文案素材见 [`itch-io-page.md`](itch-io-page.md)（英文 + 中文），
+配图在 `dist/shot-1..8-*.png`（8 张 1440×810，`480×270 × 3` 整数倍，直接拖进 itch.io 上传框）。
 
 ## 玩法
 

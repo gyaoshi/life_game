@@ -795,8 +795,9 @@ function stepDebris(dt){
   for(let i=debris.length-1;i>=0;i--){
     const d = debris[i];
     d.t += dt;
-    // 完全退出画面左侧就回收（世界在往前走，它们自己会退出去）
-    if(d.dox - (worldX - d.w0) < -28) debris.splice(i,1);
+    // 完全退出画面左侧才回收（世界在往前走，它们自己会慢慢退出去）
+    // 注意阈值要按 heroX 算：屏幕 x = 150 + (dox - 漂移)，所以 x < -16 才算真出画
+    if(d.dox - (worldX - d.w0) < -166) debris.splice(i,1);
   }
 }
 function drawDebris(heroX, feetY){
@@ -2817,13 +2818,20 @@ function drawEventLabel(e){
                   : (e.state === 'miss') ? '#ff9a9a'
                   : (e.k ? '#ffe37a' : '#ffffff');
     ctx.fillText(nm, lx, ly);
-    // 操作提示
-    ctx.fillStyle = 'rgba(255,255,255,0.62)';
+    // 操作提示（画在浅色方框上也看得清，所以描一圈深色边）
     const hint = e.type==='rapid' ? TF('rapid', e.need||8)
                : e.type==='hold'  ? T('按住不放')
                : e.type==='drag'  ? T('拖进方框')
                : e.type==='tap'   ? T('点它') : '';
-    if(hint){ fitFont(hint, 152, 8.5, '', 6.5); ctx.fillText(hint, lx, ly + 12); }
+    if(hint){
+      fitFont(hint, 152, 8.5, '', 6.5);
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 2.4;
+      ctx.strokeStyle = 'rgba(8,10,18,0.62)';
+      ctx.strokeText(hint, lx, ly + 13);
+      ctx.fillStyle = 'rgba(255,255,255,0.88)';
+      ctx.fillText(hint, lx, ly + 13);
+    }
     ctx.globalAlpha = 1;
   }
   ctx.restore();
@@ -4072,16 +4080,17 @@ function drawLangRow(big){
     if(heroAnim) heroAnim.t = heroAnim.dur * prog;
   }
   // 撒一排遗落物，看它们跟着背景慢慢后移
-  //   ?debris=0     刚掉下来
-  //   ?debris=90    背景已经往前走了 90px（东西相应退到左边）
-  const md = /[?&#]debris=(\d+)/.exec(q);
+  //   ?debris=0      在身后散一排刚掉下来的东西
+  //   ?debris=-250   整排再往左挪，看得更清楚（负数 = 更靠过去）
+  //   ?debris=90     往后挪（东西相应往右）
+  const md = /[?&#]debris=(-?\d+)/.exec(q);
   if(md){
     noSpawn = true;
     if(state !== 'play'){ startGame(); noSpawn = true; }
     if(!mt){ gt = 30; worldX = 30*44; }
     const kinds = ['book','paper','pill','coin','cup','key','ball','flower','phone','bag','cap','ring'];
     const back = parseFloat(md[1]) || 0;
-    for(let i=0;i<11;i++) pushDebris(kinds[i % kinds.length], -66 + i*31 + back, 0, {flip:(i%2)===1});
+    for(let i=0;i<11;i++) pushDebris(kinds[i % kinds.length], -152 + i*13 + back, 0, {flip:(i%2)===1});
     for(const d of debris) d.t = 9;                 // 已经落定了
   }
 
