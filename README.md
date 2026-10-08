@@ -18,6 +18,11 @@ python -m http.server 8000
 
 > 首次点击画面后才会出声（浏览器要求用户手势才能启动音频）。
 
+支持 **中文 / English / 日本語 / Русский** 四种语言，开始界面和结算界面都能随时切换；
+首次进入会按浏览器语言自动选择。
+
+itch.io 商店页文案素材见 [`itch-io-page.md`](itch-io-page.md)（英文 + 中文）。
+
 ## 玩法
 
 五种交互轮着来，难度越到后面越挤（事件窗口从 5 秒压到约 3 秒）：
@@ -81,6 +86,33 @@ python -m http.server 8000
     | 看夕阳 | 夕阳下沉、橙光铺地、快门一闪 | 乌云压过来把太阳盖住 |
     | 努力呼吸 | 平稳的心电波形 | 波形乱跳、末端转红 |
 
+- **遗落物**：动画里掉出去的东西**不会凭空消失**。它们落在地上，然后跟着背景
+  一起慢慢后移——任务往前走了，过去留在过去。
+
+  - 位置公式是 `x = heroX + d.dox - (worldX - d.w0)`：`(worldX - d.w0)` 是这段
+    时间世界前进的距离，它和地面同速漂移，所以在屏幕上读起来就是「停在那里慢慢退远」。
+  - 生命周期：落地（0.30s 三次缓出）→ 一次小弹跳 → 随地漂移 →（出屏或左缘淡出）回收。
+    上限 `DEBRIS_MAX = 60`，`resetGame()` 清零，连打 300 次峰值也只有 18 件。
+  - 33 个特效条目开了 `leave:1`；其中 5 个用手写 `leaveSpec(hx, hy)` 精确复现
+    动画最后一帧的落点——「打疫苗」掉落针管 + 药片、「背书包」掉落书包 + 6 本书 + 纸、
+    「投简历」掉落邮件 + 文档、「买车」掉落车、「应酬敬酒」掉落两只碗。
+  - 配方里用 `leave / leaveN / leaveAt / leaveIcon / leaveOx / leaveSpread / leaveScale`
+    声明；`R_throw` `R_drop` `R_marks` `R_crack` `R_stack` `R_swarm` `R_weather` 8 个配方已接入。
+
+- **多语言**：完整支持 **简体中文 / English / 日本語 / Русский**，共 219 条文案。
+
+  - 中文原串就是键，`I18N.en / .ja / .ru` 存译文；`T(s)` 查表、缺词**回退中文**，
+    `TF(k, a, b)` 支持 `{0}` `{1}` 参数替换（年龄、剩余秒数、combo 等）。
+  - 开始界面和结算界面都有**语言切换按钮**（选中态高亮）；选择写进 `localStorage.life_lang`，
+    同时改 `document.documentElement.lang` 和 `document.title`。
+  - 首次进入按 `navigator.language` 自动选择（`initLang()`）。
+  - 西文比中文长、俄文尤甚，所以补了 `fitFont(text, maxW, size, weight, minSize)`
+    自动缩字号，和 `wrapLines(text, maxW)` 折行（有空格按词折，没空格按字折）。
+  - 字体栈统一为 `FONT` 常量，所有 `ctx.font` 和 CSS 都走它。
+  - **一个坑**：`fxLab(cfg)` 在 `EVFX` 表**构建期**（模块顶层）就会执行，
+    如果那时就调 `T(cfg.label)`，会撞上还没初始化的 `lang`，浏览器直接白屏。
+    所以 `fxLab` 只存原文 `raw`，把 `T(raw)` 延迟到返回的绘制闭包里执行。
+
 - **随行同伴**：光有特效还不够——人生里真正重要的事，几乎都不是一个人做的。
   所以 48 件事里有 22 件成功后，会**有人陪你一起往前走 5 秒**：
 
@@ -123,4 +155,7 @@ life-game.html?fx=vacOk&ok=0&ap=0.8        强制看失败版
 life-game.html?mate=girl&ap=2.6            叫一个女孩来陪着走（定格）
 life-game.html?mate=girl,child&ap=2        叫两个
 life-game.html?t=82.2&mate=girl,child,mom&g=1&ap=3   三个半透明虚影
+life-game.html?lang=en                     直接进英文版（zh|en|ja|ru）
+life-game.html?debris=9                    在身后留 9 件遗落物，看退场效果
+life-game.html?debris=12&lang=ja           组合用
 ```

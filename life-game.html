@@ -6,7 +6,7 @@
 <title>一生 · 100 秒</title>
 <style>
   html,body{margin:0;padding:0;height:100%;background:#07070c;overflow:hidden;
-    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif;
+    font-family:"PingFang SC","Hiragino Sans","Yu Gothic UI","Meiryo","Microsoft YaHei","Hiragino Sans GB",sans-serif;
     -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
   #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
   canvas{display:block;background:#000;box-shadow:0 0 0 1px #1c1c26,0 0 60px rgba(0,0,0,.9);}
@@ -737,8 +737,9 @@ function fxSparks(cx, cy, n, cols, u, opt){
 }
 // 主画布上的浮动小字（清晰中文）
 function fxLab(cfg){
-  const txt = cfg.label;
+  const raw = cfg.label;                 // 原文，绘制时再查语言（那时 lang 已就绪）
   return function(hx, hy, u){
+    const txt = T(raw);
     if(!txt) return;
     const a = fxLife(u, cfg.labIn == null ? 0.10 : cfg.labIn, cfg.labOut == null ? 0.30 : cfg.labOut);
     const y = hy - (cfg.labelY == null ? 78 : cfg.labelY) - (cfg.labelRise || 0)*fxEase(u);
@@ -755,6 +756,76 @@ function fxLab(cfg){
 }
 
 // ============================================================
+// ============================================================
+//  遗落物 —— 任务动画里掉出来的东西不立刻消失：
+//  留在世界里，跟着背景一起慢慢往左退。
+//  "事情过去了，东西留在过去了。"
+// ============================================================
+const debris = [];
+const DEBRIS_MAX = 60;
+
+function pushDebris(kind, dox, dy, opt){
+  opt = opt || {};
+  if(!ICONS[kind]) kind = 'paper';
+  if(debris.length >= DEBRIS_MAX) debris.shift();
+  debris.push({
+    k:kind, dox:dox, dy:dy||0, w0:worldX, t:0,
+    flip:!!opt.flip, sc:(opt.sc == null ? 0.86 : opt.sc)
+  });
+}
+// 特效走到 leaveAt（默认 0.86）时，把它"掉出来的东西"留在世界里，只留一次
+function leaveFrom(f){
+  const d = f.d;
+  if(d.leaveSpec){
+    const list = d.leaveSpec(150, GROUND);
+    for(const it of list) pushDebris(it[0], it[1] - 150, it[2] || 0, {flip:!!it[3], sc:it[4]});
+    return;
+  }
+  const n = Math.max(1, d.leaveN || 1);
+  const kind = d.leaveIcon || d.icon || 'paper';
+  const baseOx = d.leaveOx == null ? 0 : d.leaveOx;
+  const spread = d.leaveSpread == null ? 30 : d.leaveSpread;
+  for(let i=0;i<n;i++){
+    const r1 = prand(i*17 + 3.3);
+    const ox = baseOx + (n === 1 ? 0 : (i - (n-1)/2)*(spread/(n-1)) + (r1-0.5)*7);
+    pushDebris(kind, ox, 0, {flip: r1 > 0.5, sc: (d.leaveScale || 0.78) + r1*0.18});
+  }
+}
+function stepDebris(dt){
+  for(let i=debris.length-1;i>=0;i--){
+    const d = debris[i];
+    d.t += dt;
+    // 完全退出画面左侧就回收（世界在往前走，它们自己会退出去）
+    if(d.dox - (worldX - d.w0) < -28) debris.splice(i,1);
+  }
+}
+function drawDebris(heroX, feetY){
+  for(const d of debris){
+    // 关键：位置随 worldX 一起漂 —— 跟地面同速，所以是"留在原地"
+    const x = heroX + d.dox - (worldX - d.w0);
+    if(x < -16 || x > WW + 16) continue;
+    const ft = uclamp(d.t/0.30);
+    const e  = 1 - Math.pow(1-ft, 3);
+    const hop = (d.t > 0.30 && d.t < 0.54) ? Math.max(0, Math.sin((d.t-0.30)/0.24*Math.PI))*3.4 : 0;
+    const y = feetY + d.dy - (1-e)*20 - hop;
+    const edge = uclamp((x + 24)/30);          // 快到画面左缘时淡出
+    fxA(0.95 * edge * (0.25 + 0.75*ft));
+    wpx(x - 4.2*d.sc, feetY + d.dy - 1.2, 8.4*d.sc, 1.6, 'rgba(0,0,0,0.20)');
+    drawIconFlip(d.k, x, y - 3.4, d.sc, d.flip);
+    octx.globalAlpha = 1;
+  }
+}
+// 可以左右镜像的图标绘制（散落的物件朝向随机一点，更像"撒了一地"）
+function drawIconFlip(name, cx, cy, sc, flip){
+  const sp = ICONS[name]; if(!sp) return;
+  const ox = cx - 4*sc, oy = cy - 4*sc;
+  for(let y=0;y<8;y++) for(let x=0;x<8;x++){
+    const ch = sp[y][flip ? 7-x : x];
+    if(ch === '.' || ch === undefined) continue;
+    wpx(ox + x*sc, oy + y*sc, sc, sc, PAL[ch] || '#fff');
+  }
+}
+
 //  特效配方（复用同一套"运动"，靠参数拉开差异）
 // ============================================================
 // 上方弹出后升起
@@ -776,6 +847,8 @@ function R_pop(icon, c){
 function R_throw(icon, c){
   c = c || {};
   return { dur:c.dur||1.4, aura:c.aura,
+    icon:icon, leave:c.leave, leaveN:c.leaveN, leaveAt:(c.leaveAt == null ? 0.76 : c.leaveAt),
+    leaveIcon:c.leaveIcon, leaveOx:c.leaveOx == null ? ((c.dir == null ? 1 : c.dir)*(8 + (c.dist||100))*0.82) : c.leaveOx, leaveSpread:28,
     draw:function(hx,hy,u){
       const a = fxLife(u, 0.08, 0.22), d = c.dir == null ? 1 : c.dir;
       const arc = c.arc == null ? 34 : c.arc, dist = c.dist || 100, y0 = c.y0 == null ? 34 : c.y0;
@@ -797,6 +870,8 @@ function R_throw(icon, c){
 function R_drop(icon, c){
   c = c || {};
   return { dur:c.dur||1.7, aura:c.aura,
+    icon:icon, leave:c.leave, leaveN:c.leaveN, leaveAt:(c.leaveAt == null ? 0.78 : c.leaveAt),
+    leaveIcon:c.leaveIcon, leaveOx:c.leaveOx == null ? (c.ox||0) : c.leaveOx, leaveSpread:30,
     draw:function(hx,hy,u){
       const a = fxLife(u, 0.08, 0.20);
       const top = c.top == null ? 42 : c.top;
@@ -867,6 +942,8 @@ function R_meter(c){
 function R_stack(icon, c){
   c = c || {};
   return { dur:c.dur||1.7, aura:c.aura,
+    icon:icon, leave:c.leave, leaveN:c.leaveN, leaveAt:(c.leaveAt == null ? 0.78 : c.leaveAt),
+    leaveIcon:c.leaveIcon, leaveOx:c.leaveOx == null ? (c.ox == null ? 26 : c.ox) : c.leaveOx, leaveSpread:30,
     draw:function(hx,hy,u){
       const n = c.n || 6, x0 = hx + (c.ox == null ? 26 : c.ox);
       for(let i=0;i<n;i++){
@@ -905,6 +982,8 @@ function R_grow(icon, c){
 function R_crack(icon, c){
   c = c || {};
   return { dur:c.dur||1.6, aura:c.aura,
+    icon:icon, leave:c.leave, leaveN:c.leaveN, leaveAt:(c.leaveAt == null ? 0.78 : c.leaveAt),
+    leaveIcon:c.leaveIcon, leaveOx:c.leaveOx == null ? (c.ox||0) : c.leaveOx, leaveSpread:30,
     draw:function(hx,hy,u){
       const x = hx + (c.ox||0), y = hy - (c.oy == null ? 44 : c.oy);
       const sh = uclamp((u-0.30)/0.5);
@@ -951,6 +1030,8 @@ function R_two(a, b, c){
 function R_swarm(icon, c){
   c = c || {};
   return { dur:c.dur||1.7, aura:c.aura,
+    icon:icon, leave:c.leave, leaveN:c.leaveN, leaveAt:(c.leaveAt == null ? 0.78 : c.leaveAt),
+    leaveIcon:c.leaveIcon, leaveOx:c.leaveOx == null ? (c.ox == null ? 26 : c.ox) : c.leaveOx, leaveSpread:30,
     draw:function(hx,hy,u){
       const n = c.n || 6;
       const g = fxEase(uclamp(u/0.75));
@@ -969,6 +1050,8 @@ function R_swarm(icon, c){
 function R_weather(kind, c){
   c = c || {};
   return { dur:c.dur||1.8, aura:c.aura,
+    icon:(kind === 'rain' ? 'cup' : c.leaveIcon), leave:c.leave, leaveN:c.leaveN, leaveAt:(c.leaveAt == null ? 0.78 : c.leaveAt),
+    leaveIcon:c.leaveIcon, leaveOx:c.leaveOx == null ? (c.ox == null ? 24 : c.ox) : c.leaveOx, leaveSpread:30,
     draw:function(hx,hy,u){
       if(kind === 'rain'){
         fxA(fxLife(u, 0.15, 0.25));
@@ -1027,6 +1110,8 @@ function R_card(icon, c){
 function R_marks(icon, c){
   c = c || {};
   return { dur:c.dur||1.6, aura:c.aura,
+    icon:icon, leave:c.leave, leaveN:c.leaveN, leaveAt:(c.leaveAt == null ? 0.78 : c.leaveAt),
+    leaveIcon:c.leaveIcon, leaveOx:c.leaveOx == null ? (c.ox||0) : c.leaveOx, leaveSpread:30,
     draw:function(hx,hy,u){
       const x = hx + (c.ox||0), y = hy - (c.oy == null ? 46 : c.oy) - (c.rise||0)*fxEase(u);
       fxIconA(icon, x, y, c.sc||2.6, fxLife(u, 0.1, 0.22));
@@ -1146,18 +1231,18 @@ const EVFX = {
 /* ---- 婴幼儿 ---- */
 milkOk: R_pop('milk', {aura:'heal', label:'喝饱了', labelCol:'#ffe9b0', sc:2.6, ox:16, spark:6, sparkCol:['#ffffff','#fff6e0']}),
 milkNo: R_drop('milk', {label:'洒了一身', labelCol:'#ffb4b4', sc:2.6, ox:6, debris:true, debrisN:9,
-                        debrisCol:['#ffffff','#e8f4ff','#cfe6ff'], ripple:true, rippleCol:'rgba(255,255,255,0.7)'}),
+                        debrisCol:['#ffffff','#e8f4ff','#cfe6ff'], ripple:true, rippleCol:'rgba(255,255,255,0.7)', leave:1, leaveN:1}),
 
 momOk:  R_rings({aura:'power', label:'「妈——妈」', labelCol:'#ffe37a', col:'#ffe9b0', maxR:46, n:3, icon:'baby', oy:44}),
 momNo:  R_rings({aura:'sad', label:'没学会…', labelCol:'#ffb4b4', col:'#9aa0a6', maxR:28, n:2, oy:44}),
 
 zhouOk: R_pop('book', {aura:'sparkle', label:'抓到了书', labelCol:'#8ef09a', sc:2.8, ox:-16, spark:8, rise:22}),
 zhouNo: R_drop('book', {label:'抓空了', labelCol:'#ffb4b4', sc:2.6, ox:-8, debris:true, debrisN:6,
-                        debrisCol:['#f2c33d','#e0483c','#3f8fd8']}),
+                        debrisCol:['#f2c33d','#e0483c','#3f8fd8'], leave:1, leaveN:4, leaveSpread:46}),
 
 stepOk: R_steps('ball', {aura:'sparkle', label:'第一步！', labelCol:'#8ef09a', n:4, col:'#ffffff'}),
 stepNo: R_drop('ball', {aura:'sad', label:'摔了一跤', labelCol:'#ffb4b4', sc:2.6, ox:14, bounce:true,
-                        debris:true, debrisN:5, debrisCol:['#ffffff','#ffd0e0','#cfe6ff']}),
+                        debris:true, debrisN:5, debrisCol:['#ffffff','#ffd0e0','#cfe6ff'], leave:1, leaveN:3, leaveSpread:34}),
 
 /* ---- 打疫苗：成功 = 注射 + 免疫护盾；失败 = 病毒缠身 ---- */
 vacOk:{ dur:1.9, aura:'shield', overlay:fxLab({label:'免疫 ✓', labelCol:'#8ef09a'}),
@@ -1189,7 +1274,9 @@ vacOk:{ dur:1.9, aura:'shield', overlay:fxLab({label:'免疫 ✓', labelCol:'#8e
     }
   }},
 
-vacNo:{ dur:2.0, aura:'sick', overlay:fxLab({label:'还是病倒了', labelCol:'#9df08a'}),
+vacNo:{ dur:2.0, aura:'sick', leave:1, leaveAt:0.8,
+  leaveSpec:function(hx,hy){ return [['syringe', hx+42, 0, false, 1.3], ['pill', hx+60]]; },
+  overlay:fxLab({label:'还是病倒了', labelCol:'#9df08a'}),
   draw:function(hx,hy,u){
     const n = 7;
     for(let i=0;i<n;i++){
@@ -1226,7 +1313,18 @@ bagOk:{ dur:1.7, aura:'sparkle', overlay:fxLab({label:'背上了', labelCol:'#8e
     if(g > 0.9) fxSparks(hx - 7, hy - 30, 6, ['#ffe37a','#fff6c0','#ffffff'], uclamp((u-0.55)/0.45), {spread:22, up:14, size:2.2});
   }},
 
-bagNo:{ dur:2.0, overlay:fxLab({label:'散了…', labelCol:'#ffb4b4'}),
+bagNo:{ dur:2.0, leave:1, leaveAt:0.92,
+  // 书落在哪儿，就留在哪儿（用同一个伪随机，位置跟动画完全对得上）
+  leaveSpec:function(hx,hy){
+    const out = [['bag', hx + 4, 0, false, 1.8]];
+    for(let i=0;i<6;i++){
+      const r1 = prand(i*5+2), dir = (i%2) ? 1 : -1;
+      out.push(['book', hx + 4 + dir*(22 + r1*44)]);
+    }
+    out.push(['paper', hx - 34]);
+    return out;
+  },
+  overlay:fxLab({label:'散了…', labelCol:'#ffb4b4'}),
   draw:function(hx,hy,u){
     const fall = fxEase(uclamp(u/0.4));
     const bx = hx + 4;
@@ -1256,22 +1354,22 @@ bagNo:{ dur:2.0, overlay:fxLab({label:'散了…', labelCol:'#ffb4b4'}),
 /* ---- 小学 ---- */
 hwOk:   R_marks('paper', {aura:'sparkle', label:'作业完成', labelCol:'#8ef09a', n:3, markCol:'#7cf08a'}),
 hwNo:   R_crack('paper', {aura:'sad', label:'撕了…', labelCol:'#ffb4b4', n:10,
-                          cols:['#ffffff','#cfd6e6','#9aa0a6']}),
+                          cols:['#ffffff','#cfd6e6','#9aa0a6'], leave:1, leaveN:4, leaveSpread:44}),
 
 poemOk: R_rise('book', {aura:'heal', label:'背下来了', labelCol:'#8ef09a', n:3, gap:18, rise:34, sc:1.8}),
 poemNo: R_crack('book', {aura:'sad', label:'一句也没记住', labelCol:'#ffb4b4', n:8,
-                         cols:['#ffffff','#cfd6e6','#9aa0a6']}),
+                         cols:['#ffffff','#cfd6e6','#9aa0a6'], leave:1, leaveN:2, leaveSpread:26}),
 
 gymOk:  R_rings({aura:'power', label:'做得真齐', labelCol:'#8ef09a', col:'#ffe9b0', maxR:40, n:3, icon:'star', oy:44}),
 gymNo:  R_rings({aura:'sweat', label:'同手同脚…', labelCol:'#ffb4b4', col:'#9aa0a6', maxR:24, n:2, oy:44}),
 
 friendOk: R_two('heart', 'heart', {aura:'love', label:'朋友 +1', labelCol:'#ffc6dd', gap:36, spark:9}),
 friendNo: R_crack('heart', {aura:'broken', label:'没交到', labelCol:'#ffb4b4', n:8,
-                            cols:['#e0483c','#ff8a8a','#ffc6dd']}),
+                            cols:['#e0483c','#ff8a8a','#ffc6dd'], leave:1, leaveN:2, leaveSpread:24}),
 
 gameOk: R_pop('gamepad', {aura:'sparkle', label:'好玩！', labelCol:'#8ef09a', sc:2.8, ox:-18, spark:8}),
 gameNo: R_crack('gamepad', {aura:'sad', label:'被没收了', labelCol:'#ffb4b4', n:9,
-                            cols:['#9aa0a6','#3a2b28','#cfd6e6']}),
+                            cols:['#9aa0a6','#3a2b28','#cfd6e6'], leave:1, leaveN:2, leaveSpread:26}),
 
 voteOk: R_meter({aura:'sparkle', label:'当选了 ✓', labelCol:'#8ef09a', col:'#7cf08a', w:58, fill:1, tick:true}),
 voteNo: R_meter({aura:'sad', label:'只有一票', labelCol:'#ffb4b4', col:'#ff8a8a', w:58, fill:0.12, tick:true}),
@@ -1279,25 +1377,27 @@ voteNo: R_meter({aura:'sad', label:'只有一票', labelCol:'#ffb4b4', col:'#ff8
 /* ---- 中学 ---- */
 testOk: R_grow('star', {aura:'sparkle', label:'全对', labelCol:'#ffe37a', sc0:0.8, sc1:4.2, oy:44, spark:6}),
 testNo: R_crack('paper', {aura:'broken', label:'全错…', labelCol:'#ffb4b4', n:12,
-                          cols:['#ffffff','#ff8a8a','#ffc6dd']}),
+                          cols:['#ffffff','#ff8a8a','#ffc6dd'], leave:1, leaveN:4, leaveSpread:42}),
 
-crushOk: R_throw('heart', {aura:'love', label:'心跳了一下', labelCol:'#ffc6dd', dir:1, dist:126, y0:38, arc:40, trail:'#ffc6dd'}),
+crushOk: R_throw('heart', {aura:'love', label:'心跳了一下', labelCol:'#ffc6dd', dir:1, dist:126, y0:38, arc:40, trail:'#ffc6dd', leave:1}),
 crushNo: R_crack('heart', {aura:'broken', label:'没敢说出口', labelCol:'#ffb4b4', n:8,
-                           cols:['#e0483c','#ff8a8a']}),
+                           cols:['#e0483c','#ff8a8a'], leave:1, leaveN:2, leaveSpread:22}),
 
 nightOk: R_weather('night', {aura:'sparkle', label:'背完了', labelCol:'#8ef09a'}),
 nightNo: R_zzz({label:'睡着了…', labelCol:'#cfe6ff'}),
 
 gkOk: R_card('doc', {aura:'sparkle', label:'录取通知书', labelCol:'#8ef09a', oy:38, top:58, sc:2.6}),
-gkNo: R_marks('paper', {aura:'broken', label:'没考上', labelCol:'#ffb4b4', n:4, markCol:'#ff5a5a', cross:true}),
+gkNo: R_marks('paper', {aura:'broken', label:'没考上', labelCol:'#ffb4b4', n:4, markCol:'#ff5a5a', cross:true, leave:1, leaveN:3, leaveSpread:40}),
 
 gradOk: R_throw('cap', {aura:'sparkle', label:'毕业了', labelCol:'#8ef09a', dir:1, dist:58, y0:54, arc:58, trail:'#ffe37a'}),
-gradNo: R_drop('cap', {aura:'sad', label:'帽子没接住', labelCol:'#ffb4b4', sc:2.6, ox:12, bounce:true}),
+gradNo: R_drop('cap', {aura:'sad', label:'帽子没接住', labelCol:'#ffb4b4', sc:2.6, ox:12, bounce:true, leave:1, leaveN:1}),
 
 /* ---- 青年 ---- */
 resumeOk: R_throw('mail', {aura:'power', label:'已投递', labelCol:'#8ef09a', dir:1, dist:136, arc:30, y0:34}),
 
-resumeNo:{ dur:1.9, aura:'sad', overlay:fxLab({label:'已读不回', labelCol:'#ffb4b4'}),
+resumeNo:{ dur:1.9, aura:'sad', leave:1, leaveAt:0.8,
+  leaveSpec:function(hx,hy){ return [['mail', hx+16, 0, false, 1.25], ['doc', hx+34, 0, false, 1.15]]; },
+  overlay:fxLab({label:'已读不回', labelCol:'#ffb4b4'}),
   draw:function(hx,hy,u){
     const d = 72, out = fxEase(uclamp(u/0.45)), back = uclamp((u-0.5)/0.45);
     const x = hx + 10 + d*out - d*1.1*back;
@@ -1313,11 +1413,11 @@ resumeNo:{ dur:1.9, aura:'sad', overlay:fxLab({label:'已读不回', labelCol:'#
   }},
 
 itvOk: R_card('doc', {aura:'power', label:'拿到 offer', labelCol:'#8ef09a', oy:38, top:52, sc:2.6}),
-itvNo: R_marks('doc', {aura:'sad', label:'婉拒了', labelCol:'#ffb4b4', n:2, markCol:'#ff5a5a', cross:true}),
+itvNo: R_marks('doc', {aura:'sad', label:'婉拒了', labelCol:'#ffb4b4', n:2, markCol:'#ff5a5a', cross:true, leave:1, leaveN:1}),
 
 rentOk: R_card('key', {aura:'sparkle', label:'有地方住了', labelCol:'#8ef09a', oy:36, top:46, sc:2.8}),
 rentNo: R_drop('key', {aura:'sad', label:'没租到', labelCol:'#ffb4b4', sc:2.8, ox:14, bounce:true,
-                       debris:true, debrisN:5, debrisCol:['#a97a4a','#9aa0a6']}),
+                       debris:true, debrisN:5, debrisCol:['#a97a4a','#9aa0a6'], leave:1, leaveN:2, leaveSpread:24}),
 
 otOk: R_weather('sun', {aura:'power', label:'天亮了', labelCol:'#ffe37a'}),
 
@@ -1337,26 +1437,28 @@ otNo:{ dur:2.0, aura:'sleep', overlay:fxLab({label:'蓝屏了', labelCol:'#9fd4f
 loveOk: R_two('heart', 'heart', {aura:'love', label:'在一起了', labelCol:'#ffc6dd', gap:32, spark:12,
                                  sparkCol:['#ffc6dd','#ff8a8a','#ffe37a']}),
 loveNo: R_crack('heart', {aura:'broken', label:'还是散了', labelCol:'#ffb4b4', n:9,
-                          cols:['#e0483c','#ff8a8a','#ffc6dd']}),
+                          cols:['#e0483c','#ff8a8a','#ffc6dd'], leave:1, leaveN:2, leaveSpread:24}),
 
 saveOk: R_stack('coin', {aura:'money', label:'攒够了', labelCol:'#ffe37a', n:7, ox:26, step:5, spark:6}),
 saveNo: R_drop('coin', {aura:'sad', label:'没攒住', labelCol:'#ffb4b4', bounce:true,
-                        debris:true, debrisN:10, debrisCol:['#f2c33d','#ffe37a','#c99a20']}),
+                        debris:true, debrisN:10, debrisCol:['#f2c33d','#ffe37a','#c99a20'], leave:1, leaveN:5, leaveSpread:48}),
 
 houseOk: R_card('doc', {aura:'sparkle', label:'房产证到手', labelCol:'#8ef09a', oy:38, top:56, sc:2.6}),
 houseNo: R_marks('house', {aura:'sad', label:'被别人买走了', labelCol:'#ffb4b4', n:1, ox:34,
-                           markCol:'#ff5a5a', cross:true}),
+                           markCol:'#ff5a5a', cross:true, leave:1, leaveN:1, leaveIcon:'doc', leaveOx:20}),
 
 ringOk: R_card('ring', {aura:'love', label:'我愿意', labelCol:'#ffc6dd', oy:36, top:44, sc:2.8}),
 ringNo: R_drop('ring', {aura:'sad', label:'掉了…', labelCol:'#ffb4b4', sc:2.8, ox:16, bounce:true,
-                        debris:true, debrisN:4, debrisCol:['#f2c33d','#ffffff']}),
+                        debris:true, debrisN:4, debrisCol:['#f2c33d','#ffffff'], leave:1, leaveN:1}),
 
 babyOk: R_pop('baby', {aura:'love', label:'抱起来了', labelCol:'#ffc6dd', sc:2.8, ox:16, spark:8}),
 babyNo: R_swarm('baby', {aura:'sad', label:'手忙脚乱', labelCol:'#ffb4b4', n:3, sc:2.0, r0:44}),
 
 carOk: R_throw('car', {aura:'power', label:'新车！', labelCol:'#8ef09a', dir:1, dist:150, y0:16, arc:6, sc:2.2, trail:'#ff6a6a'}),
 
-carNo:{ dur:2.0, aura:'sad', overlay:fxLab({label:'抛锚了', labelCol:'#ffb4b4'}),
+carNo:{ dur:2.0, aura:'sad', leave:1, leaveAt:0.8,
+  leaveSpec:function(hx,hy){ return [['car', hx+46, 0, false, 1.5]]; },
+  overlay:fxLab({label:'抛锚了', labelCol:'#ffb4b4'}),
   draw:function(hx,hy,u){
     const x = hx + 42, y = hy - 12;
     fxIconA('car', x, y, 2.2, fxLife(u, 0.10, 0.25));
@@ -1372,7 +1474,7 @@ carNo:{ dur:2.0, aura:'sad', overlay:fxLab({label:'抛锚了', labelCol:'#ffb4b4
 
 /* ---- 中年 ---- */
 loanOk: R_meter({aura:'heal', label:'终于还清了', labelCol:'#8ef09a', col:'#7cf08a', w:58, shrink:true, tick:true}),
-loanNo: R_stack('paper', {aura:'sad', label:'账单越来越多', labelCol:'#ffb4b4', n:7, ox:30, step:6}),
+loanNo: R_stack('paper', {aura:'sad', label:'账单越来越多', labelCol:'#ffb4b4', n:7, ox:30, step:6, leave:1, leaveN:3, leaveSpread:26}),
 
 tutorOk: R_two('book', 'star', {aura:'sparkle', label:'听懂了 ✓', labelCol:'#8ef09a', gap:30, spark:8}),
 tutorNo: R_weather('cloud', {aura:'rage', label:'气到拍桌', labelCol:'#ffb4b4'}),
@@ -1381,14 +1483,16 @@ promoOk: R_arrow({aura:'power', label:'升职了', labelCol:'#8ef09a', dir:1, n:
 promoNo: R_arrow({aura:'sad', label:'没升上去', labelCol:'#ffb4b4', dir:-1, n:4, col:'#ff7a7a'}),
 
 toastOk: R_two('cup', 'cup', {aura:'power', label:'干杯！', labelCol:'#8ef09a', gap:30, spark:7}),
-toastNo: R_swarm('cup', {aura:'sick', label:'喝趴了', labelCol:'#ffb4b4', n:4, sc:1.8, r0:40}),
+toastNo: R_swarm('cup', {aura:'sick', label:'喝趴了', labelCol:'#ffb4b4', n:4, sc:1.8, r0:40, leave:1, leaveN:2, leaveSpread:26}),
 
 healthOk: R_marks('cross', {aura:'heal', label:'一切正常', labelCol:'#8ef09a', n:3, markCol:'#7cf08a'}),
 healthNo: R_arrow({aura:'sick', label:'几项超标', labelCol:'#ffb4b4', dir:-1, n:5, col:'#ff7a7a', ox:26}),
 
 dinnerOk: R_pop('cup', {aura:'heal', label:'一家人', labelCol:'#ffe9b0', sc:2.6, ox:14, spark:6}),
 
-dinnerNo:{ dur:2.0, aura:'sad', overlay:fxLab({label:'一个人', labelCol:'#ffb4b4'}),
+dinnerNo:{ dur:2.0, aura:'sad', leave:1, leaveAt:0.8,
+  leaveSpec:function(hx,hy){ return [['cup', hx+36, 0, false, 1.2], ['cup', hx+52, 0, false, 1.05]]; },
+  overlay:fxLab({label:'一个人', labelCol:'#ffb4b4'}),
   draw:function(hx,hy,u){
     const x = hx + 34, y = hy - 8;
     fxIconA('cup', x, y, 2.4, fxLife(u, 0.10, 0.25));
@@ -1436,19 +1540,19 @@ reunionNo:{ dur:1.9, aura:'sad', overlay:fxLab({label:'都在看手机', labelCo
   }},
 
 gym2Ok: R_pop('ball', {aura:'muscle', label:'有劲儿了', labelCol:'#8ef09a', sc:2.8, ox:-16, spark:8, sparkCol:['#ff8a8a','#ffe37a','#fff']}),
-gym2No: R_drop('ball', {aura:'sad', label:'卡再没打开过', labelCol:'#ffb4b4', bounce:true}),
+gym2No: R_drop('ball', {aura:'sad', label:'卡再没打开过', labelCol:'#ffb4b4', bounce:true, leave:1, leaveN:1, leaveIcon:'doc', leaveOx:12}),
 
 farewellOk: R_grow('flower', {aura:'ghost', label:'送您到这', labelCol:'#ffe9b0', sc0:1.2, sc1:2.6,
                               petals:['#ffc6dd','#fff6c0','#ffffff']}),
 farewellNo: R_drop('flower', {aura:'sad', label:'花掉了', labelCol:'#ffb4b4', bounce:true,
-                              debris:true, debrisN:6, debrisCol:['#f2a7c3','#ffffff','#5cbf6a']}),
+                              debris:true, debrisN:6, debrisCol:['#f2a7c3','#ffffff','#5cbf6a'], leave:1, leaveN:3, leaveSpread:30}),
 
 debtOk: R_phone({aura:'heal', label:'挂断了', labelCol:'#8ef09a', col:'#7cf08a'}),
-debtNo: R_swarm('phone', {aura:'rage', label:'铃声不停', labelCol:'#ffb4b4', n:4, sc:1.8, r0:40}),
+debtNo: R_swarm('phone', {aura:'rage', label:'铃声不停', labelCol:'#ffb4b4', n:4, sc:1.8, r0:40, leave:1, leaveN:1}),
 
 /* ---- 老年 ---- */
 retireOk: R_pop('clock', {aura:'sparkle', label:'退休了', labelCol:'#8ef09a', sc:2.8, ox:18, spark:7, rise:24}),
-retireNo: R_stack('paper', {aura:'sad', label:'又被叫回去了', labelCol:'#ffb4b4', n:6, ox:30}),
+retireNo: R_stack('paper', {aura:'sad', label:'又被叫回去了', labelCol:'#ffb4b4', n:6, ox:30, leave:1, leaveN:3, leaveSpread:26}),
 
 danceOk: R_rise('note', {aura:'power', label:'跟上拍子', labelCol:'#8ef09a', n:5, gap:16, rise:34, sc:1.9}),
 danceNo: R_rise('cross', {aura:'sad', label:'踩到脚了', labelCol:'#ffb4b4', n:3, gap:18, rise:24, sc:1.9}),
@@ -1458,19 +1562,19 @@ grandNo: R_drop('baby', {aura:'sad', label:'哭个不停', labelCol:'#ffb4b4', s
 
 travelOk: R_pop('car', {aura:'sparkle', label:'出门看世界', labelCol:'#8ef09a', sc:2.8, ox:22, spark:7, rise:22}),
 travelNo: R_drop('car', {aura:'sad', label:'轮子掉了', labelCol:'#ffb4b4', ox:18, bounce:true,
-                         debris:true, debrisN:4, debrisCol:['#3a3a44','#9aa0a6']}),
+                         debris:true, debrisN:4, debrisCol:['#3a3a44','#9aa0a6'], leave:1, leaveN:1, leaveIcon:'car', leaveOx:24, leaveScale:1.4}),
 
 flowerOk: R_grow('flower', {aura:'heal', label:'开花了', labelCol:'#8ef09a', sc0:0.9, sc1:3.6,
                             petals:['#ffc6dd','#fff6c0','#ff8a8a','#ffffff'], lift:14}),
 flowerNo: R_drop('flower', {aura:'sad', label:'没养活', labelCol:'#ffb4b4', bounce:true,
-                            debris:true, debrisN:6, debrisCol:['#c8a050','#a08040','#8a6a48']}),
+                            debris:true, debrisN:6, debrisCol:['#c8a050','#a08040','#8a6a48'], leave:1, leaveN:2, leaveSpread:24}),
 
 pillOk: R_rise('pill', {aura:'heal', label:'按时吃了', labelCol:'#8ef09a', n:4, gap:15, rise:26, sc:1.9}),
 pillNo: R_drop('pill', {aura:'sad', label:'药撒了一地', labelCol:'#ffb4b4', bounce:true,
-                        debris:true, debrisN:9, debrisCol:['#ffffff','#e8f4ff','#f2a7c3']}),
+                        debris:true, debrisN:9, debrisCol:['#ffffff','#e8f4ff','#f2a7c3'], leave:1, leaveN:6, leaveSpread:52}),
 
 aloneOk: R_pop('cup', {aura:'heal', label:'吃完了', labelCol:'#ffe9b0', sc:2.6, ox:14, spark:4}),
-aloneNo: R_weather('rain', {aura:'sad', label:'剩了一半', labelCol:'#ffb4b4'}),
+aloneNo: R_weather('rain', {aura:'sad', label:'剩了一半', labelCol:'#ffb4b4', leave:1, leaveN:1, leaveIcon:'cup', leaveOx:24}),
 
 sunsetOk:{ dur:2.1, aura:'sparkle', overlay:fxLab({label:'好看', labelCol:'#ffd08a'}),
   draw:function(hx,hy,u){
@@ -1560,6 +1664,10 @@ function stepEvFX(dt){
   for(let i=evFX.length-1;i>=0;i--){
     const f = evFX[i];
     f.t += dt;
+    // 掉出来的东西留在世界里（只留一次）
+    if(f.d.leave && !f._lv && f.t >= f.dur*(f.d.leaveAt == null ? 0.86 : f.d.leaveAt)){
+      f._lv = 1; leaveFrom(f);
+    }
     if(f.t >= f.dur) evFX.splice(i,1);
   }
   if(heroAura){
@@ -2155,6 +2263,7 @@ function resetGame(){
   }
   heroAnim = null;
   evFX.length = 0; heroAura = null; mates.length = 0;
+  debris.length = 0;
   gt = 0; score = 0; combo = 0; maxCombo = 0; done = 0; missed = 0;
   worldX = 0; animT = 0; chosen = null; endT = 0; flashT = 0; shakeT = 0;
   lastTheme = -1;
@@ -2240,8 +2349,18 @@ function onDown(ev){
   if(actx && actx.state === 'suspended') actx.resume();
   const p = toWorld(ev);
 
-  if(state === 'menu'){ if(hitStart(p.x,p.y)) startGame(); return; }
-  if(state === 'result'){ if(hitRestart(p.x,p.y)){ startGame(); } return; }
+  if(state === 'menu'){
+    const li = langHit(p.x, p.y, true);
+    if(li >= 0){ setLang(LANG_LIST[li][0]); SFX.tick(); return; }
+    if(hitStart(p.x,p.y)) startGame();
+    return;
+  }
+  if(state === 'result'){
+    const li = langHit(p.x, p.y, false);
+    if(li >= 0){ setLang(LANG_LIST[li][0]); SFX.tick(); return; }
+    if(hitRestart(p.x,p.y)){ startGame(); }
+    return;
+  }
   if(state === 'final'){ handleFinalDown(p.x,p.y); return; }
   if(state !== 'play') return;
 
@@ -2309,7 +2428,7 @@ function pickHit(e, x, y){
   return -1;
 }
 
-function hitStart(x,y){ return x>WW/2-66 && x<WW/2+66 && y>202 && y<248; }
+function hitStart(x,y){ return x>WW/2-62 && x<WW/2+62 && y>195 && y<230; }
 function hitRestart(x,y){ return x>WW/2-58 && x<WW/2+58 && y>236 && y<266; }
 
 function handleFinalDown(x,y){
@@ -2405,6 +2524,7 @@ function update(dt){
   animT += dt;
   if(heroAnim && !animFreeze){ heroAnim.t += dt; if(heroAnim.t >= heroAnim.dur) heroAnim = null; }
   stepEvFX(dt);
+  stepDebris(dt);
   stepMates(dt);
   musicTick();
   if(talkT > 0) talkT -= dt;
@@ -2477,6 +2597,9 @@ function render(){
   // ---------- 世界 ----------
   octx.save();
   const th = drawWorld(age);
+
+  // 遗落物（在场景里，跟着背景一起后移；画在小人后面）
+  if(state === 'play') drawDebris(150, GROUND);
 
   // 小人
   const heroX = 150;
@@ -2636,13 +2759,15 @@ function drawEventLabel(e){
     ctx.fillRect(WW/2-15, 71, 30, 30);
     drawIconMain(e.ic, WW/2, 86, 2);
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 14px "PingFang SC","Microsoft YaHei",sans-serif';
-    ctx.fillText('【'+e.n+'】', WW/2, 116);
+    const ptitle = TF('pickTitle', T(e.n));
+    fitFont(ptitle, WW - 40, 14, 'bold ', 9);
+    ctx.fillText(ptitle, WW/2, 116);
     ctx.globalAlpha = 1;
     const opts = e.opts, n = opts.length, bw = PBW, bh = PBH, gap = PGAP;
     const totalW = n*bw + (n-1)*gap, startX = (WW-totalW)/2, by = PY;
     const resolved = e.state !== 'active';
     const fa = resolved ? Math.max(0, Math.min(1, e.flash/0.45)) : 1;
+    const stdTag = T('标准答案');
     for(let i=0;i<n;i++){
       const bx = startX + i*(bw+gap);
       const isRight = resolved && i === e.right;
@@ -2656,48 +2781,49 @@ function drawEventLabel(e){
       ctx.lineWidth = isRight || isWrong ? 2 : 1;
       ctx.strokeRect(bx+0.5, by+0.5, bw-1, bh-1);
       ctx.fillStyle = '#fff';
-      ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
-      const label = opts[i];
-      const lines = [];
-      if(label.length > 8){
-        const mid = Math.ceil(label.length/2);
-        lines.push(label.slice(0,mid)); lines.push(label.slice(mid));
-      } else lines.push(label);
+      const label = T(opts[i]);
+      let ls = 11, lines = [];
+      for(ls = 11; ls >= 7.5; ls -= 0.5){
+        ctx.font = ls + 'px ' + FONT;
+        lines = wrapLines(label, bw - 10);
+        if(lines.length <= 2) break;
+      }
       for(let k=0;k<lines.length;k++)
-        ctx.fillText(lines[k], bx+bw/2, by+bh/2 - (lines.length-1)*7 + k*14);
+        ctx.fillText(lines[k], bx+bw/2, by+bh/2 - (lines.length-1)*(ls+3)/2 + k*(ls+3) - 3);
       if(isRight){
         ctx.fillStyle = '#0c2a12';
-        ctx.font = 'bold 8px "PingFang SC","Microsoft YaHei",sans-serif';
-        ctx.fillText('标准答案', bx+bw/2, by + bh - 7);
+        fitFont(stdTag, bw - 8, 8, 'bold ', 6);
+        ctx.fillText(stdTag, bx+bw/2, by + bh - 7);
       }
       ctx.globalAlpha = 1;
     }
     ctx.globalAlpha = resolved ? fa : 1;
+    const fb = resolved ? (e.correct ? T('✓ 你答对了') : T('✗ 你答错了')) : T('按"社会标准答案"选');
     ctx.fillStyle = resolved ? (e.correct ? '#7ef08a' : '#ff9a9a') : 'rgba(255,255,255,0.7)';
-    ctx.font = '9px "PingFang SC","Microsoft YaHei",sans-serif';
-    ctx.fillText(resolved ? (e.correct ? '✓ 你答对了' : '✗ 你答错了') : '按"社会标准答案"选', WW/2, 208);
+    fitFont(fb, WW - 40, 9.5, '', 7);
+    ctx.fillText(fb, WW/2, 208);
     ctx.globalAlpha = 1;
   } else {
-    const sc = (e.state==='active'||e.flash>0) ? 1 : 1;
     ctx.globalAlpha = (e.state==='done'||e.state==='miss') ? Math.max(0,e.flash/0.45) : 1;
-    ctx.font = 'bold 11px "PingFang SC","Microsoft YaHei",sans-serif';
-    const ly = e.y - 31;
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    const w = ctx.measureText(((e.state==='done')?'✓ ':(e.state==='miss')?'✗ ':'')+e.n).width;
-    roundRect(e.x - w/2 - 4, ly - 8, w + 8, 15, 3, 'rgba(12,12,20,0.62)');
     const mark = (e.state === 'done') ? '✓ ' : (e.state === 'miss' ? '✗ ' : '');
+    const nm = mark + T(e.n);
+    const ly = e.y - 31;
+    fitFont(nm, 152, 11, 'bold ', 8);            // 英文 / 俄文比中文长，自动缩字号
+    const w = ctx.measureText(nm).width;
+    const lx = Math.max(w/2 + 6, Math.min(WW - w/2 - 6, e.x));   // 别顶出画面
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    roundRect(lx - w/2 - 4, ly - 8, w + 8, 15, 3, 'rgba(12,12,20,0.62)');
     ctx.fillStyle = (e.state === 'done') ? '#8ef09a'
                   : (e.state === 'miss') ? '#ff9a9a'
                   : (e.k ? '#ffe37a' : '#ffffff');
-    ctx.fillText(mark + e.n, e.x, ly);
+    ctx.fillText(nm, lx, ly);
     // 操作提示
-    ctx.font = '8px "PingFang SC","Microsoft YaHei",sans-serif';
     ctx.fillStyle = 'rgba(255,255,255,0.62)';
-    const hint = e.type==='rapid' ? ('连点 ×'+(e.need||8))
-               : e.type==='hold'  ? '按住不放'
-               : e.type==='drag'  ? '拖进方框'
-               : e.type==='tap'   ? '点它' : '';
-    if(hint) ctx.fillText(hint, e.x, ly + 12);
+    const hint = e.type==='rapid' ? TF('rapid', e.need||8)
+               : e.type==='hold'  ? T('按住不放')
+               : e.type==='drag'  ? T('拖进方框')
+               : e.type==='tap'   ? T('点它') : '';
+    if(hint){ fitFont(hint, 152, 8.5, '', 6.5); ctx.fillText(hint, lx, ly + 12); }
     ctx.globalAlpha = 1;
   }
   ctx.restore();
@@ -2730,38 +2856,38 @@ function drawHUD(p, age, th){
   // 年龄 / 阶段
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
-  ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.font = 'bold 13px ' + FONT;
   ctx.fillStyle = '#fff';
   ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 3;
-  ctx.fillText(Math.min(85, Math.floor(age)) + ' 岁', 12, 22);
+  ctx.fillText(TF('age', Math.min(85, Math.floor(age))), 12, 22);
   ctx.textAlign = 'center';
-  ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.font = '11px ' + FONT;
   ctx.fillStyle = '#ffe37a';
-  ctx.fillText('· ' + th.n + ' ·', WW/2, 23);
+  ctx.fillText('· ' + T(th.n) + ' ·', WW/2, 23);
 
   // 分数 + 连击
   ctx.textAlign = 'right';
-  ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.font = 'bold 13px ' + FONT;
   ctx.fillStyle = '#fff';
   ctx.fillText(score + '', WW-12, 22);
   if(combo >= 3){
-    ctx.font = 'bold 12px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.font = 'bold 12px ' + FONT;
     ctx.fillStyle = '#ffd24a';
-    ctx.fillText('×'+combo+' 连击', WW-12, 38);
+    ctx.fillText(TF('combo', combo), WW-12, 38);
   }
   ctx.shadowBlur = 0;
 
   // 剩余时间
   ctx.textAlign = 'left';
-  ctx.font = '9px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.font = '9px ' + FONT;
   ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.fillText('剩余 ' + Math.max(0, Math.ceil(TOTAL-gt)) + ' 秒', 12, 38);
+  ctx.fillText(TF('remain', Math.max(0, Math.ceil(TOTAL-gt))), 12, 38);
 
   // 完成度
   ctx.textAlign = 'center';
-  ctx.font = '9px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.font = '9px ' + FONT;
   ctx.fillStyle = 'rgba(255,255,255,0.75)';
-  ctx.fillText('已完成 ' + done + ' / ' + TOTAL_EVENTS, WW/2, 38);
+  ctx.fillText(TF('doneOf', done, TOTAL_EVENTS), WW/2, 38);
   ctx.restore();
 }
 
@@ -2775,32 +2901,37 @@ function drawMenu(t){
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
   // 标题
-  ctx.font = 'bold 52px "PingFang SC","Microsoft YaHei",sans-serif';
+  const ttl = T('一 生');
+  fitFont(ttl, WW-40, 52, 'bold ', 26);
   ctx.fillStyle = 'rgba(255,227,122,0.18)';
-  ctx.fillText('一 生', WW/2+2, 76+2);
+  ctx.fillText(ttl, WW/2+2, 76+2);
   ctx.fillStyle = '#ffe37a';
-  ctx.fillText('一 生', WW/2, 76);
+  ctx.fillText(ttl, WW/2, 76);
 
-  ctx.font = '12px "PingFang SC","Microsoft YaHei",sans-serif';
+  const sub = T('100 秒 · 走完一辈子');
   ctx.fillStyle = '#cfd6e6';
-  ctx.fillText('100 秒 · 走完一辈子', WW/2, 116);
+  fitFont(sub, WW-40, 12, '', 9);
+  ctx.fillText(sub, WW/2, 116);
 
   // 说明
-  ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
   ctx.fillStyle = 'rgba(230,236,248,0.86)';
   const tips = [
-    '把该做的事，一件一件做完。',
-    '【点】点掉飞过的东西　【连点】拼命点',
-    '【按住】别松手　　【拖拽】拖进方框　【选择】选标准答案'
+    T('把该做的事，一件一件做完。'),
+    T('【点】点掉飞过的东西　【连点】拼命点'),
+    T('【按住】别松手　　【拖拽】拖进方框　【选择】选标准答案')
   ];
-  for(let i=0;i<tips.length;i++) ctx.fillText(tips[i], WW/2, 142 + i*16);
+  for(let i=0;i<tips.length;i++){
+    fitFont(tips[i], WW-24, 11, '', 8);
+    ctx.fillText(tips[i], WW/2, 136 + i*16);
+  }
 
+  const note = T('做完了算分，没做完不算。做完多少，就是多少。');
   ctx.fillStyle = 'rgba(255,227,122,0.72)';
-  ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.fillText('做完了算分，没做完不算。做完多少，就是多少。', WW/2, 196);
+  fitFont(note, WW-24, 10, '', 8);
+  ctx.fillText(note, WW/2, 188);
 
   // 开始按钮
-  const bx = WW/2-62, by = 208, bw = 124, bh = 34;
+  const bx = WW/2-62, by = 196, bw = 124, bh = 32;
   const pulse = 0.5 + 0.5*Math.sin(t*4);
   roundRect(bx, by, bw, bh, 6, 'rgba(255,227,122,'+(0.16+0.12*pulse)+')');
   ctx.strokeStyle = '#ffe37a'; ctx.lineWidth = 1.5;
@@ -2812,12 +2943,17 @@ function drawMenu(t){
   ctx.closePath(); ctx.stroke();
 
   ctx.fillStyle = '#ffe37a';
-  ctx.font = 'bold 17px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.fillText('开 始 出 生', WW/2, by+bh/2+1);
+  const btxt = T('开 始 出 生');
+  fitFont(btxt, bw - 14, 17, 'bold ', 11);
+  ctx.fillText(btxt, WW/2, by+bh/2+1);
 
+  const snd = T('点击按钮开始（会有声音，建议戴耳机）');
   ctx.fillStyle = 'rgba(200,208,224,0.55)';
-  ctx.font = '9px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.fillText('点击按钮开始（会有声音，建议戴耳机）', WW/2, 256);
+  fitFont(snd, WW-24, 9, '', 7.5);
+  ctx.fillText(snd, WW/2, 238);
+
+  // 语言
+  drawLangRow(true);
   ctx.restore();
 }
 
@@ -2834,12 +2970,14 @@ function drawFinalScreen(){
   if(!finalDone || finalDoneT < 0.6){
     ctx.globalAlpha = a;
     ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 10;
+    const q1 = T('这一生最重要的，是什么？');
     ctx.fillStyle = '#ffe37a';
-    ctx.font = 'bold 18px "PingFang SC","Microsoft YaHei",sans-serif';
-    ctx.fillText('这一生最重要的，是什么？', WW/2, 60);
+    fitFont(q1, WW-40, 18, 'bold ', 11);
+    ctx.fillText(q1, WW/2, 60);
+    const q2 = T('把它留下。其余的，会随着时间散掉。');
     ctx.fillStyle = '#eef2fb';
-    ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
-    ctx.fillText('把它留下。其余的，会随着时间散掉。', WW/2, 82);
+    fitFont(q2, WW-40, 11, '', 8.5);
+    ctx.fillText(q2, WW/2, 82);
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
   }
@@ -2871,19 +3009,22 @@ function drawFinalScreen(){
     ctx.strokeRect(x-w/2+0.5, y-h/2+bob+0.5, w-1, h-1);
 
     drawCardIcon(c.ic, x, y-6+bob, c.col);
+    const cn = T(c.n);
     ctx.fillStyle = c === chosen ? '#ffe37a' : '#e8ecf6';
-    ctx.font = (c.n.length>4?'9px':'11px') + ' "PingFang SC","Microsoft YaHei",sans-serif';
-    ctx.fillText(c.n, x, y+15+bob);
+    fitFont(cn, w - 4, 11, '', 6.5);
+    ctx.fillText(cn, x, y+15+bob);
     ctx.globalAlpha = 1;
   }
 
   if(finalDone){
+    const kt = TF('kept', T(chosen ? chosen.n : '什么也没有'));
     ctx.fillStyle = '#ffe37a';
-    ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
-    ctx.fillText('你留下了：' + (chosen ? chosen.n : '什么也没有'), WW/2, 234);
+    fitFont(kt, WW-40, 13, 'bold ', 9);
+    ctx.fillText(kt, WW/2, 234);
+    const kt2 = T('其余的，都散在风里了。');
     ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.font = '9px "PingFang SC","Microsoft YaHei",sans-serif';
-    ctx.fillText('其余的，都散在风里了。', WW/2, 250);
+    fitFont(kt2, WW-40, 9, '', 7.5);
+    ctx.fillText(kt2, WW/2, 250);
   }
   ctx.restore();
 }
@@ -2925,29 +3066,38 @@ function drawResult(){
   ctx.fillStyle = '#9e9eac'; ctx.fillRect(tx-26, base-70, 52, 5);
   ctx.fillStyle = '#74747f'; ctx.fillRect(tx-26, base-36, 52, 2);
   // 碑文
+  const tg1 = T('你'), tg2 = T('0 — 85 岁');
   ctx.fillStyle = '#2f2f39';
-  ctx.font = 'bold 15px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.fillText('你', tx, base-58);
-  ctx.font = '9px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.fillText('0 — 85 岁', tx, base-43);
+  fitFont(tg1, 44, 15, 'bold ', 9);
+  ctx.fillText(tg1, tx, base-58);
+  fitFont(tg2, 46, 9, '', 6.5);
+  ctx.fillText(tg2, tx, base-43);
   ctx.fillStyle = '#ffe37a';
-  ctx.font = 'bold 9px "PingFang SC","Microsoft YaHei",sans-serif';
-  const kept = chosen ? chosen.n : '（空）';
-  ctx.fillText(kept.length > 6 ? kept.slice(0, 6) : kept, tx, base-25);
+  const kept = T(chosen ? chosen.n : '（空）');
+  fitFont(kept, 48, 9, 'bold ', 6);
+  ctx.fillText(kept, tx, base-25);
 
   // ---------- 右栏 ----------
   ctx.textAlign = 'left';
   const rx = 160, rw = 306;
   ctx.fillStyle = 'rgba(255,255,255,0.45)';
-  ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.fillText('你的评价', rx, 26);
+  ctx.font = '10px ' + FONT;
+  ctx.fillText(T('你的评价'), rx, 26);
+  const gt = T(g.t);
   ctx.fillStyle = '#ffe37a';
-  ctx.font = 'bold 27px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.fillText(g.t, rx, 52);
+  fitFont(gt, rw, 27, 'bold ', 13);
+  ctx.fillText(gt, rx, 52);
 
+  // 评语：太长了就缩一号，保证不超过两行
+  const gd = T(g.d);
   ctx.fillStyle = 'rgba(232,238,250,0.92)';
-  ctx.font = '10.5px "PingFang SC","Microsoft YaHei",sans-serif';
-  wrapText(g.d, rx, 78, rw, 15);
+  let gfs = 10.5, gls = [];
+  for(gfs = 10.5; gfs >= 8; gfs -= 0.5){
+    ctx.font = gfs + 'px ' + FONT;
+    gls = wrapLines(gd, rw);
+    if(gls.length <= 2) break;
+  }
+  for(let i=0;i<gls.length;i++) ctx.fillText(gls[i], rx, 78 + i*15);
 
   // ---------- 数据条 ----------
   const pct = Math.round(rate*100);
@@ -2960,47 +3110,48 @@ function drawResult(){
   ctx.fillStyle = pct>=72 ? '#7cf0d0' : (pct>=42 ? '#f2c33d' : '#ff8a8a');
   ctx.fillRect(rx, by0, rw * rate, 9);
   ctx.fillStyle = '#0c0c16';
-  ctx.font = 'bold 8px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.font = 'bold 8px ' + FONT;
   ctx.fillText(pct + '%', rx + 5, by0 + 5);
 
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.fillText('得分 ' + score, rx, by0 + 26);
+  ctx.font = 'bold 13px ' + FONT;
+  ctx.fillText(TF('score', score), rx, by0 + 26);
   ctx.fillStyle = 'rgba(232,238,250,0.82)';
-  ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.fillText('做完 ' + done + ' / ' + TOTAL_EVENTS + ' 件', rx + 150, by0 + 26);
+  ctx.font = '10px ' + FONT;
+  ctx.fillText(TF('doneCnt', done, TOTAL_EVENTS), rx + 150, by0 + 26);
   ctx.fillStyle = 'rgba(232,238,250,0.62)';
-  ctx.fillText('错过 ' + missed + ' 件　·　最高连击 ×' + maxCombo, rx, by0 + 42);
+  ctx.fillText(TF('missCnt', missed, maxCombo), rx, by0 + 42);
 
   // ---------- 遗漏清单 ----------
   const missedKey = LIFE.filter(function(e){ return e.k && e.state !== 'done'; });
   ctx.fillStyle = 'rgba(255,255,255,0.42)';
-  ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.fillText('这一生你没能做成的重要的事', rx, by0 + 60);
+  ctx.font = '10px ' + FONT;
+  ctx.fillText(T('这一生你没能做成的重要的事'), rx, by0 + 60);
   if(missedKey.length === 0){
     ctx.fillStyle = '#7cf0d0';
-    ctx.font = 'bold 11px "PingFang SC","Microsoft YaHei",sans-serif';
-    ctx.fillText('一件都没有落下。', rx, by0 + 78);
+    ctx.font = 'bold 11px ' + FONT;
+    ctx.fillText(T('一件都没有落下。'), rx, by0 + 78);
     ctx.fillStyle = 'rgba(232,238,250,0.6)';
-    ctx.font = '9px "PingFang SC","Microsoft YaHei",sans-serif';
-    ctx.fillText('可你到最后，也只带走了一样东西。', rx, by0 + 94);
+    fitFont(T('可你到最后，也只带走了一样东西。'), rw, 9, '', 7.5);
+    ctx.fillText(T('可你到最后，也只带走了一样东西。'), rx, by0 + 94);
   } else {
     ctx.fillStyle = '#ffb4b4';
-    ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.font = '10px ' + FONT;
     let line = '', ly = by0 + 78;
     const maxY = by0 + 94;
     for(let i=0;i<missedKey.length;i++){
-      const next = line ? line + '　' + missedKey[i].n : missedKey[i].n;
+      const nm2 = T(missedKey[i].n);
+      const next = line ? line + TF('sep') + nm2 : nm2;
       if(ctx.measureText(next).width > rw){
         ctx.fillText(line, rx, ly);
-        ly += 15; line = missedKey[i].n;
+        ly += 15; line = nm2;
         if(ly > maxY){ line = ''; break; }
       } else line = next;
     }
     if(line) ctx.fillText(line, rx, ly);
     ctx.fillStyle = 'rgba(232,238,250,0.55)';
-    ctx.font = '9px "PingFang SC","Microsoft YaHei",sans-serif';
-    ctx.fillText('它们都还在那儿，只是你没时间去。', rx, by0 + 108);
+    fitFont(T('它们都还在那儿，只是你没时间去。'), rw, 9, '', 7.5);
+    ctx.fillText(T('它们都还在那儿，只是你没时间去。'), rx, by0 + 108);
   }
 
   // ---------- 重来 ----------
@@ -3009,26 +3160,852 @@ function drawResult(){
   ctx.strokeStyle = '#ffe37a'; ctx.lineWidth = 1; ctx.strokeRect(bx+0.5, byy+0.5, bw-1, bh-1);
   ctx.fillStyle = '#ffe37a';
   ctx.textAlign = 'center';
-  ctx.font = 'bold 12px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.fillText('重 来 一 次', WW/2, byy + bh/2 + 1);
+  const rtxt = T('重 来 一 次');
+  fitFont(rtxt, bw - 12, 12, 'bold ', 8);
+  ctx.fillText(rtxt, WW/2, byy + bh/2 + 1);
   ctx.globalAlpha = 1;
+
+  // 结算界面也能换语言
+  drawLangRow(false);
   ctx.restore();
 }
 
 function wrapText(text, x, y, maxW, lh){
-  let line = '';
-  let yy = y;
-  for(let i=0;i<text.length;i++){
-    const test = line + text[i];
-    if(ctx.measureText(test).width > maxW){
-      ctx.fillText(line, x, yy); yy += lh; line = text[i];
-    } else line = test;
+  const ws = wrapLines(text, maxW);
+  for(let i=0;i<ws.length;i++) ctx.fillText(ws[i], x, y + i*lh);
+}
+
+// ============================================================
+//  14. 多语言 —— 中文 / English / 日本語 / Русский
+//      中文是原文，其它语言按原文查表；缺词自动回退中文
+// ============================================================
+const LANG_LIST  = [['zh','中文'],['en','English'],['ja','日本語'],['ru','Русский']];
+const LANG_ORDER = ['zh','en','ja','ru'];
+// 中日文走 PingFang / ヒラギノ / 游ゴシック，西文与俄文走系统无衬线
+const FONT = '"PingFang SC","Hiragino Sans","Yu Gothic UI","Meiryo","Microsoft YaHei","Helvetica Neue",Arial,sans-serif';
+let lang = 'zh';
+
+const I18N = {
+en:{
+  "一生 · 100 秒":"A Life in 100 Seconds",
+  "一 生":"A  L I F E",
+  "100 秒 · 走完一辈子":"100 seconds · one whole life",
+  "把该做的事，一件一件做完。":"Do what you're supposed to do — one at a time.",
+  "【点】点掉飞过的东西　【连点】拼命点":"[TAP] tap the flying things　[TAP-TAP] tap like mad",
+  "【按住】别松手　　【拖拽】拖进方框　【选择】选标准答案":"[HOLD] don't let go　[DRAG] drag it into the box　[PICK] choose the \"right\" answer",
+  "做完了算分，没做完不算。做完多少，就是多少。":"Only what you finish counts. That's all.",
+  "开 始 出 生":"B E  B O R N",
+  "点击按钮开始（会有声音，建议戴耳机）":"Click to begin (sound on — headphones recommended)",
+  "这一生最重要的，是什么？":"What mattered most in this life?",
+  "把它留下。其余的，会随着时间散掉。":"Keep it. The rest will scatter with time.",
+  "什么也没有":"nothing at all",
+  "其余的，都散在风里了。":"Everything else scattered in the wind.",
+  "你":"YOU",
+  "0 — 85 岁":"0 — 85 years",
+  "（空）":"(empty)",
+  "你的评价":"THE VERDICT",
+  "这一生你没能做成的重要的事":"The important things you never got to do",
+  "一件都没有落下。":"Not a single one was left undone.",
+  "可你到最后，也只带走了一样东西。":"Yet in the end you took only one thing with you.",
+  "它们都还在那儿，只是你没时间去。":"They're all still there. You just never had the time.",
+  "重 来 一 次":"O N E  M O R E  L I F E",
+  "标准答案":"THE RIGHT ONE",
+  "✓ 你答对了":"✓ You got it",
+  "✗ 你答错了":"✗ You got it wrong",
+  "按\"社会标准答案\"选":"Pick the \"expected\" answer",
+  "按住不放":"HOLD IT",
+  "拖进方框":"DRAG IT IN",
+  "点它":"TAP IT",
+  "出生":"Birth",
+  "童年":"Childhood",
+  "少年":"Youth",
+  "青年":"Young adult",
+  "而立":"Thirties",
+  "中年":"Midlife",
+  "老年":"Old age",
+  "暮年":"Twilight",
+  "爱人":"The one I loved",
+  "孩子":"Children",
+  "父母":"Parents",
+  "事业":"Career",
+  "钱":"Money",
+  "自由":"Freedom",
+  "看过的夕阳":"Sunsets I saw",
+  "没说出口的话":"Words unsaid",
+  "人生赢家":"Winner at life",
+  "你把每一件事都做完了。墓碑前鲜花不断，只是没人知道你喜欢什么。":"You finished every single thing. Flowers keep piling on your grave — nobody ever knew what you liked.",
+  "圆满一生":"A complete life",
+  "该有的都有了。你活成了别人嘴里的\"范本\"。":"You got everything you were supposed to. You became the model life everyone cites.",
+  "体面":"Respectable",
+  "该赶上的都赶上了，漏掉的那几样，你说以后再说。":"You caught every train you were meant to. The few you missed, you said you would do later.",
+  "及格":"A pass",
+  "忙忙碌碌，好歹把主线走完了。":"Busy from start to finish — at least you finished the main story.",
+  "普通人":"Just an ordinary person",
+  "一半完成，一半错过。这大概就是大多数人的一生。":"Half done, half missed. Which is probably most lives.",
+  "总是慢半拍":"Always half a beat late",
+  "你一直在追——可有些事，是追不回来的。":"You chased the whole way — but some things do not come back when you run after them.",
+  "浑浑噩噩":"In a daze",
+  "很多事还没弄明白，就已经过去了。":"A lot of things were over before you understood them.",
+  "一具行走的躯壳":"A walking shell",
+  "你几乎什么都没抓住。不过没关系——至少你来过。":"You barely held on to anything. That is all right — at least you came.",
+  "喝到第一口奶":"First mouthful of milk",
+  "学会喊妈妈":"Learn to say \"Mama\"",
+  "抓周":"First-birthday pick",
+  "书":"Book",
+  "钞票":"Money",
+  "公章":"Official seal",
+  "迈出第一步":"First steps",
+  "打疫苗不能哭":"Vaccine — don't cry",
+  "背上小书包":"Shoulder the schoolbag",
+  "写完今天的作业":"Finish today's homework",
+  "背下这首古诗":"Memorize the old poem",
+  "广播体操":"Radio calisthenics",
+  "交到第一个朋友":"Make your first friend",
+  "偷玩十分钟游戏":"Ten sneaky minutes of games",
+  "竞选班干部":"Run for class officer",
+  "我想为大家服务":"\"I want to serve you all\"",
+  "我请大家吃辣条":"\"Snacks for everyone!\"",
+  "我爸是家委会":"\"My dad is on the PTA\"",
+  "刷完这套卷子":"Finish the whole workbook",
+  "偷偷喜欢的人":"The one you secretly liked",
+  "熬夜复习":"All-night revision",
+  "高考":"The entrance exam",
+  "毕业合影":"Graduation photo",
+  "投出第 87 份简历":"The 87th résumé sent",
+  "面试":"The interview",
+  "我不会但我可以学":"I can't, but I'll learn",
+  "我精通一切":"I'm an expert in everything",
+  "我要求双休":"\"I demand two days off\"",
+  "租一间城中村":"Rent a room in the old town",
+  "通宵加班":"Work through the night",
+  "谈恋爱":"Fall in love",
+  "攒首付":"Save the down payment",
+  "买下那套房":"Buy that apartment",
+  "戴上戒指":"Put on the ring",
+  "抱起新生的孩子":"Hold your newborn",
+  "提走人生第一辆车":"First car of your life",
+  "还房贷":"Pay the mortgage",
+  "辅导孩子作业":"Help with the kid's homework",
+  "升职答辩":"Promotion review",
+  "讲业绩":"Talk numbers",
+  "讲情怀":"Talk passion",
+  "讲领导好":"Praise the boss",
+  "应酬敬酒":"Toast at the business dinner",
+  "翻开体检报告":"Open the health report",
+  "轻度脂肪肝":"Mild fatty liver",
+  "建议复查":"Recommend a recheck",
+  "一切正常":"All normal",
+  "回家陪父母吃顿饭":"Dinner with your parents",
+  "同学聚会":"Class reunion",
+  "办那张健身卡":"Get that gym membership",
+  "送别父母":"See your parents off",
+  "接催收电话":"Take the debt collector's call",
+  "办退休手续":"Papers for retirement",
+  "跳广场舞":"Square dancing",
+  "抱一抱孙子":"Hold your grandchild",
+  "出门看一次世界":"See the world once",
+  "养花晒太阳":"Grow flowers, sit in the sun",
+  "按时吃药":"Take the pills on time",
+  "一个人吃完晚饭":"Eat dinner alone",
+  "看一次夕阳":"Watch one sunset",
+  "给儿女打个电话":"Call your children",
+  "努力呼吸":"Breathe",
+  "想起很久以前":"Remember long ago",
+  "喝饱了":"Nice and full",
+  "洒了一身":"Spilled all over",
+  "「妈——妈」":"\"Maa—maa\"",
+  "没学会…":"Didn't learn it…",
+  "抓到了书":"Grabbed the book",
+  "抓空了":"Grabbed nothing",
+  "第一步！":"First step!",
+  "摔了一跤":"Took a tumble",
+  "免疫 ✓":"Immune ✓",
+  "还是病倒了":"Still fell ill",
+  "背上了":"Straps on",
+  "散了…":"Scattered…",
+  "作业完成":"Homework done",
+  "撕了…":"Torn up…",
+  "背下来了":"Memorized",
+  "一句也没记住":"Not a single line",
+  "做得真齐":"Perfectly in sync",
+  "同手同脚…":"Wrong arm, wrong leg…",
+  "朋友 +1":"Friend +1",
+  "没交到":"No friends made",
+  "好玩！":"So fun!",
+  "被没收了":"Confiscated",
+  "当选了 ✓":"Elected ✓",
+  "只有一票":"One vote only",
+  "全对":"All correct",
+  "全错…":"All wrong…",
+  "心跳了一下":"Heart skipped",
+  "没敢说出口":"Couldn't say it",
+  "背完了":"All memorized",
+  "睡着了…":"Fell asleep…",
+  "录取通知书":"Admission letter",
+  "没考上":"Didn't get in",
+  "毕业了":"Graduated",
+  "帽子没接住":"Missed the cap",
+  "已投递":"Sent",
+  "已读不回":"Read, no reply",
+  "拿到 offer":"Got the offer",
+  "婉拒了":"Politely declined",
+  "有地方住了":"Found a place",
+  "没租到":"Couldn't rent it",
+  "天亮了":"Sunrise",
+  "蓝屏了":"Blue screen",
+  "在一起了":"Together",
+  "还是散了":"Drifted apart",
+  "攒够了":"Enough saved",
+  "没攒住":"Couldn't hold on",
+  "房产证到手":"Deed in hand",
+  "被别人买走了":"Someone else bought it",
+  "我愿意":"I do",
+  "掉了…":"Dropped it…",
+  "抱起来了":"In your arms",
+  "手忙脚乱":"Panic",
+  "新车！":"New car!",
+  "抛锚了":"Broken down",
+  "终于还清了":"Finally paid off",
+  "账单越来越多":"Bills piling up",
+  "听懂了 ✓":"Got it ✓",
+  "气到拍桌":"Table slammed",
+  "升职了":"Promoted",
+  "没升上去":"No promotion",
+  "干杯！":"Cheers!",
+  "喝趴了":"Passed out drunk",
+  "几项超标":"Numbers in red",
+  "一家人":"The whole family",
+  "一个人":"Just you",
+  "合个影":"Group photo",
+  "都在看手机":"Everyone on phones",
+  "有劲儿了":"Feeling strong",
+  "卡再没打开过":"Card never used",
+  "送您到这":"This far, for you",
+  "花掉了":"Flowers fell",
+  "挂断了":"Hung up",
+  "铃声不停":"Ringing on",
+  "退休了":"Retired",
+  "又被叫回去了":"Called back again",
+  "跟上拍子":"On the beat",
+  "踩到脚了":"Stepped on toes",
+  "抱到孙子了":"Grandchild in arms",
+  "哭个不停":"Won't stop crying",
+  "出门看世界":"Off to see the world",
+  "轮子掉了":"Lost a wheel",
+  "开花了":"It bloomed",
+  "没养活":"Didn't survive",
+  "按时吃了":"Taken on time",
+  "药撒了一地":"Pills everywhere",
+  "吃完了":"Finished the meal",
+  "剩了一半":"Half left over",
+  "好看":"Beautiful",
+  "云挡住了":"Clouds moved in",
+  "接通了":"Connected",
+  "无人接听":"No answer",
+  "还撑得住":"Still holding on",
+  "喘不上气":"Can't breathe",
+  "想起了很多":"So much remembered",
+  "想不起来了":"Can't remember"
+},
+ja:{
+  "一生 · 100 秒":"一生 · 100 秒",
+  "一 生":"一 生",
+  "100 秒 · 走完一辈子":"100 秒 · 一生を走り切る",
+  "把该做的事，一件一件做完。":"やるべきことを、ひとつずつ。",
+  "【点】点掉飞过的东西　【连点】拼命点":"【タップ】飛んでくる物を叩く　【連打】がむしゃらに連打",
+  "【按住】别松手　　【拖拽】拖进方框　【选择】选标准答案":"【長押し】離さない　【ドラッグ】枠へ運ぶ　【選択】模範解答を選ぶ",
+  "做完了算分，没做完不算。做完多少，就是多少。":"やり終えた分だけが点になる。できた分が、すべて。",
+  "开 始 出 生":"出 生 す る",
+  "点击按钮开始（会有声音，建议戴耳机）":"クリックで開始（音が出ます。イヤホン推奨）",
+  "这一生最重要的，是什么？":"この一生で、いちばん大切なものは？",
+  "把它留下。其余的，会随着时间散掉。":"それを残して。残りは時間とともに散っていく。",
+  "什么也没有":"何も残さなかった",
+  "其余的，都散在风里了。":"あとは、みんな風に散った。",
+  "你":"あ な た",
+  "0 — 85 岁":"0 — 85 歳",
+  "（空）":"（空）",
+  "你的评价":"あなたの評価",
+  "这一生你没能做成的重要的事":"この一生でできなかった大事なこと",
+  "一件都没有落下。":"ひとつも取りこぼさなかった。",
+  "可你到最后，也只带走了一样东西。":"それでも最後に持ち去れたのは、たったひとつ。",
+  "它们都还在那儿，只是你没时间去。":"どれもまだそこにある。ただ、時間がなかっただけ。",
+  "重 来 一 次":"も う 一 度",
+  "标准答案":"模範解答",
+  "✓ 你答对了":"✓ 正解",
+  "✗ 你答错了":"✗ 不正解",
+  "按\"社会标准答案\"选":"「模範解答」を選べ",
+  "按住不放":"長押し",
+  "拖进方框":"枠へドラッグ",
+  "点它":"タップ",
+  "出生":"誕生",
+  "童年":"幼少期",
+  "少年":"少年期",
+  "青年":"青年期",
+  "而立":"三十路",
+  "中年":"中年",
+  "老年":"老年",
+  "暮年":"晩年",
+  "爱人":"愛した人",
+  "孩子":"子ども",
+  "父母":"両親",
+  "事业":"仕事",
+  "钱":"お金",
+  "自由":"自由",
+  "看过的夕阳":"見た夕日",
+  "没说出口的话":"言えなかった言葉",
+  "人生赢家":"人生の勝者",
+  "你把每一件事都做完了。墓碑前鲜花不断，只是没人知道你喜欢什么。":"すべてをやり遂げた。墓前に花は絶えない。ただ、あなたが何が好きだったのか、誰も知らない。",
+  "圆满一生":"完璧な一生",
+  "该有的都有了。你活成了别人嘴里的\"范本\"。":"あるべきものは全部手に入れた。人はそれを「手本」と呼ぶ。",
+  "体面":"体面",
+  "该赶上的都赶上了，漏掉的那几样，你说以后再说。":"間に合うべきものには間に合った。逃したものは「また今度」と言った。",
+  "及格":"及第点",
+  "忙忙碌碌，好歹把主线走完了。":"忙しいまま、それでも本編は走り切った。",
+  "普通人":"ふつうの人",
+  "一半完成，一半错过。这大概就是大多数人的一生。":"半分は達成し、半分は逃した。それがたぶん、ほとんどの人の一生。",
+  "总是慢半拍":"いつも半拍遅い",
+  "你一直在追——可有些事，是追不回来的。":"ずっと追いかけてきた。でも、追っても戻らないものもある。",
+  "浑浑噩噩":"うつうつと",
+  "很多事还没弄明白，就已经过去了。":"よく分からないまま、多くのことが過ぎていった。",
+  "一具行走的躯壳":"歩く抜け殻",
+  "你几乎什么都没抓住。不过没关系——至少你来过。":"ほとんど何もつかめなかった。でもいい——少なくとも、あなたは来た。",
+  "喝到第一口奶":"初めての母乳",
+  "学会喊妈妈":"「ママ」と言う",
+  "抓周":"選び取り",
+  "书":"本",
+  "钞票":"お札",
+  "公章":"公印",
+  "迈出第一步":"はじめての一歩",
+  "打疫苗不能哭":"予防接種、泣かない",
+  "背上小书包":"ランドセルを背負う",
+  "写完今天的作业":"今日の宿題を終える",
+  "背下这首古诗":"漢詩を暗唱する",
+  "广播体操":"ラジオ体操",
+  "交到第一个朋友":"はじめての友だち",
+  "偷玩十分钟游戏":"こっそり10分ゲーム",
+  "竞选班干部":"学級委員に立候補",
+  "我想为大家服务":"「みんなのために尽くします」",
+  "我请大家吃辣条":"「みんなにスナックおごる！」",
+  "我爸是家委会":"「うちの父はPTAです」",
+  "刷完这套卷子":"問題集を一冊終える",
+  "偷偷喜欢的人":"こっそり好きな人",
+  "熬夜复习":"徹夜で復習",
+  "高考":"大学入試",
+  "毕业合影":"卒業写真",
+  "投出第 87 份简历":"87通目の履歴書",
+  "面试":"面接",
+  "我不会但我可以学":"「できませんが、学べます」",
+  "我精通一切":"「なんでもできます」",
+  "我要求双休":"「週休二日を要求します」",
+  "租一间城中村":"城中村の一室を借りる",
+  "通宵加班":"徹夜残業",
+  "谈恋爱":"恋をする",
+  "攒首付":"頭金をためる",
+  "买下那套房":"あの部屋を買う",
+  "戴上戒指":"指輪をはめる",
+  "抱起新生的孩子":"生まれた子を抱く",
+  "提走人生第一辆车":"人生初のマイカー",
+  "还房贷":"住宅ローンを返す",
+  "辅导孩子作业":"子どもの宿題をみる",
+  "升职答辩":"昇進面接",
+  "讲业绩":"実績を語る",
+  "讲情怀":"思いを語る",
+  "讲领导好":"上司をほめる",
+  "应酬敬酒":"接待で乾杯",
+  "翻开体检报告":"健康診断の結果を見る",
+  "轻度脂肪肝":"軽度の脂肪肝",
+  "建议复查":"再検査を勧める",
+  "一切正常":"異常なし",
+  "回家陪父母吃顿饭":"両親と食卓を囲む",
+  "同学聚会":"同窓会",
+  "办那张健身卡":"ジムのカードを作る",
+  "送别父母":"両親を見送る",
+  "接催收电话":"督促の電話に出る",
+  "办退休手续":"退職の手続き",
+  "跳广场舞":"広場ダンス",
+  "抱一抱孙子":"孫を抱く",
+  "出门看一次世界":"世界を見に出かける",
+  "养花晒太阳":"花を育て、日向ぼっこ",
+  "按时吃药":"薬をきちんと飲む",
+  "一个人吃完晚饭":"ひとりで夕食を食べる",
+  "看一次夕阳":"夕日を一度見る",
+  "给儿女打个电话":"子どもに電話する",
+  "努力呼吸":"息をする",
+  "想起很久以前":"遠い昔を思い出す",
+  "喝饱了":"まんぷく",
+  "洒了一身":"こぼれちゃった",
+  "「妈——妈」":"「マー——マ」",
+  "没学会…":"言えなかった…",
+  "抓到了书":"本をつかんだ",
+  "抓空了":"つかめなかった",
+  "第一步！":"はじめの一歩！",
+  "摔了一跤":"すってんころり",
+  "免疫 ✓":"免疫 ✓",
+  "还是病倒了":"やっぱり寝込んだ",
+  "背上了":"背負った",
+  "散了…":"散らかった…",
+  "作业完成":"宿題おわり",
+  "撕了…":"ビリビリ…",
+  "背下来了":"暗唱できた",
+  "一句也没记住":"一句も覚えてない",
+  "做得真齐":"そろってる",
+  "同手同脚…":"右と左がごちゃまぜ…",
+  "朋友 +1":"友だち +1",
+  "没交到":"友だちができない",
+  "好玩！":"たのしい！",
+  "被没收了":"没収された",
+  "当选了 ✓":"当選 ✓",
+  "只有一票":"一票だけ",
+  "全对":"全問正解",
+  "全错…":"全問不正解…",
+  "心跳了一下":"心臓が跳ねた",
+  "没敢说出口":"言い出せなかった",
+  "背完了":"覚えきった",
+  "睡着了…":"寝ちゃった…",
+  "录取通知书":"合格通知",
+  "没考上":"不合格",
+  "毕业了":"卒業",
+  "帽子没接住":"帽子を落とした",
+  "已投递":"送信済み",
+  "已读不回":"既読スルー",
+  "拿到 offer":"内定",
+  "婉拒了":"お断り",
+  "有地方住了":"住む場所ができた",
+  "没租到":"借りられなかった",
+  "天亮了":"夜が明けた",
+  "蓝屏了":"ブルースクリーン",
+  "在一起了":"つきあい始めた",
+  "还是散了":"結局わかれた",
+  "攒够了":"貯まった",
+  "没攒住":"貯まらなかった",
+  "房产证到手":"登記完了",
+  "被别人买走了":"他人に買われた",
+  "我愿意":"はい、誓います",
+  "掉了…":"落とした…",
+  "抱起来了":"抱っこした",
+  "手忙脚乱":"てんやわんや",
+  "新车！":"新車！",
+  "抛锚了":"故障した",
+  "终于还清了":"やっと完済",
+  "账单越来越多":"請求書が増えていく",
+  "听懂了 ✓":"わかった ✓",
+  "气到拍桌":"机を叩いた",
+  "升职了":"昇進",
+  "没升上去":"上がれなかった",
+  "干杯！":"乾杯！",
+  "喝趴了":"つぶれた",
+  "几项超标":"数値がオーバー",
+  "一家人":"家族そろって",
+  "一个人":"ひとり",
+  "合个影":"記念写真",
+  "都在看手机":"みんなスマホ",
+  "有劲儿了":"力がわいた",
+  "卡再没打开过":"カードは開かれず",
+  "送您到这":"ここまでお見送り",
+  "花掉了":"花が落ちた",
+  "挂断了":"切った",
+  "铃声不停":"鳴りやまない",
+  "退休了":"退職",
+  "又被叫回去了":"また呼び戻された",
+  "跟上拍子":"リズムに乗れた",
+  "踩到脚了":"足を踏んだ",
+  "抱到孙子了":"孫を抱けた",
+  "哭个不停":"泣きやまない",
+  "出门看世界":"世界を見に出発",
+  "轮子掉了":"車輪が外れた",
+  "开花了":"咲いた",
+  "没养活":"枯らした",
+  "按时吃了":"きちんと飲んだ",
+  "药撒了一地":"薬が散らばった",
+  "吃完了":"食べきった",
+  "剩了一半":"半分残った",
+  "好看":"きれいだ",
+  "云挡住了":"雲がかかった",
+  "接通了":"つながった",
+  "无人接听":"出ない",
+  "还撑得住":"まだ息がある",
+  "喘不上气":"息ができない",
+  "想起了很多":"たくさん思い出した",
+  "想不起来了":"思い出せない"
+},
+ru:{
+  "一生 · 100 秒":"Жизнь за 100 секунд",
+  "一 生":"Ж И З Н Ь",
+  "100 秒 · 走完一辈子":"100 секунд · вся жизнь",
+  "把该做的事，一件一件做完。":"Делай что положено — одно за другим.",
+  "【点】点掉飞过的东西　【连点】拼命点":"[ТАП] лови летящее　[ТЫК-ТЫК] жми как бешеный",
+  "【按住】别松手　　【拖拽】拖进方框　【选择】选标准答案":"[ДЕРЖИ] не отпускай　[ТАЩИ] тяни в рамку　[ВЫБОР] выбери «правильный» ответ",
+  "做完了算分，没做完不算。做完多少，就是多少。":"Считается только сделанное. Сколько успел — столько и твоё.",
+  "开 始 出 生":"Р О Д И Т Ь С Я",
+  "点击按钮开始（会有声音，建议戴耳机）":"Нажми, чтобы начать (со звуком — лучше в наушниках)",
+  "这一生最重要的，是什么？":"Что было важнее всего в этой жизни?",
+  "把它留下。其余的，会随着时间散掉。":"Оставь это. Остальное развеется со временем.",
+  "什么也没有":"ничего",
+  "其余的，都散在风里了。":"Всё остальное развеял ветер.",
+  "你":"ТЫ",
+  "0 — 85 岁":"0 — 85 лет",
+  "（空）":"(пусто)",
+  "你的评价":"ВЕРДИКТ",
+  "这一生你没能做成的重要的事":"Важное, что так и не успел сделать",
+  "一件都没有落下。":"Ничего не упущено.",
+  "可你到最后，也只带走了一样东西。":"Но в конце ты унёс с собой только одно.",
+  "它们都还在那儿，只是你没时间去。":"Всё это там и осталось. Просто не хватило времени.",
+  "重 来 一 次":"Е Щ Ё  Р А З",
+  "标准答案":"ВЕРНЫЙ ОТВЕТ",
+  "✓ 你答对了":"✓ Верно",
+  "✗ 你答错了":"✗ Неверно",
+  "按\"社会标准答案\"选":"Выбери «правильный» ответ",
+  "按住不放":"ДЕРЖИ",
+  "拖进方框":"ТЯНИ В РАМКУ",
+  "点它":"НАЖМИ",
+  "出生":"Рождение",
+  "童年":"Детство",
+  "少年":"Отрочество",
+  "青年":"Молодость",
+  "而立":"Тридцать лет",
+  "中年":"Зрелость",
+  "老年":"Старость",
+  "暮年":"Закат",
+  "爱人":"Любимый человек",
+  "孩子":"Дети",
+  "父母":"Родители",
+  "事业":"Карьера",
+  "钱":"Деньги",
+  "自由":"Свобода",
+  "看过的夕阳":"Увиденные закаты",
+  "没说出口的话":"Несказанные слова",
+  "人生赢家":"Победитель жизни",
+  "你把每一件事都做完了。墓碑前鲜花不断，只是没人知道你喜欢什么。":"Ты успел всё. На могиле не увядают цветы. Только никто так и не узнал, что ты любил.",
+  "圆满一生":"Прожитая жизнь",
+  "该有的都有了。你活成了别人嘴里的\"范本\"。":"У тебя было всё, что «положено». Ты стал образцом, о котором говорят другие.",
+  "体面":"Прилично",
+  "该赶上的都赶上了，漏掉的那几样，你说以后再说。":"Ты успел на все нужные поезда. А что пропустил — обещал сделать потом.",
+  "及格":"Удовлетворительно",
+  "忙忙碌碌，好歹把主线走完了。":"Всё время в делах, но основную линию ты прошёл.",
+  "普通人":"Обычный человек",
+  "一半完成，一半错过。这大概就是大多数人的一生。":"Половина сделана, половина упущена. Такова жизнь большинства.",
+  "总是慢半拍":"Вечно на полтакта позже",
+  "你一直在追——可有些事，是追不回来的。":"Ты всё время догонял — но кое-что за тобой уже не вернётся.",
+  "浑浑噩噩":"В тумане",
+  "很多事还没弄明白，就已经过去了。":"Многое закончилось раньше, чем ты понял, что это было.",
+  "一具行走的躯壳":"Ходячая оболочка",
+  "你几乎什么都没抓住。不过没关系——至少你来过。":"Ты почти ничего не удержал. Ничего страшного — ты хотя бы был здесь.",
+  "喝到第一口奶":"Первый глоток молока",
+  "学会喊妈妈":"Сказать «мама»",
+  "抓周":"Первый выбор",
+  "书":"Книга",
+  "钞票":"Деньги",
+  "公章":"Печать",
+  "迈出第一步":"Первые шаги",
+  "打疫苗不能哭":"Прививка — не плакать",
+  "背上小书包":"Надеть рюкзак",
+  "写完今天的作业":"Доделать уроки",
+  "背下这首古诗":"Выучить стихотворение",
+  "广播体操":"Зарядка под радио",
+  "交到第一个朋友":"Первый друг",
+  "偷玩十分钟游戏":"Тайком поиграть десять минут",
+  "竞选班干部":"Баллотироваться в старосты",
+  "我想为大家服务":"«Хочу служить классу»",
+  "我请大家吃辣条":"«Всем по чипсам!»",
+  "我爸是家委会":"«Мой папа в родкомитете»",
+  "刷完这套卷子":"Дорешать весь сборник",
+  "偷偷喜欢的人":"Тот, кто нравился тайком",
+  "熬夜复习":"Ночная зубрёжка",
+  "高考":"Вступительный экзамен",
+  "毕业合影":"Выпускное фото",
+  "投出第 87 份简历":"Отправить 87-е резюме",
+  "面试":"Собеседование",
+  "我不会但我可以学":"«Не умею, но научусь»",
+  "我精通一切":"«Я умею всё»",
+  "我要求双休":"«Хочу два выходных»",
+  "租一间城中村":"Снять угол в старом квартале",
+  "通宵加班":"Ночная переработка",
+  "谈恋爱":"Влюбиться",
+  "攒首付":"Накопить на первый взнос",
+  "买下那套房":"Купить ту квартиру",
+  "戴上戒指":"Надеть кольцо",
+  "抱起新生的孩子":"Взять на руки младенца",
+  "提走人生第一辆车":"Первая машина в жизни",
+  "还房贷":"Платить ипотеку",
+  "辅导孩子作业":"Помогать ребёнку с уроками",
+  "升职答辩":"Защита на повышение",
+  "讲业绩":"Говорить о цифрах",
+  "讲情怀":"Говорить о душе",
+  "讲领导好":"Хвалить начальство",
+  "应酬敬酒":"Тост на корпоративе",
+  "翻开体检报告":"Открыть медосмотр",
+  "轻度脂肪肝":"Лёгкий стеатоз печени",
+  "建议复查":"Рекомендован повторный осмотр",
+  "一切正常":"Всё в норме",
+  "回家陪父母吃顿饭":"Поужинать с родителями",
+  "同学聚会":"Встреча выпускников",
+  "办那张健身卡":"Купить абонемент в зал",
+  "送别父母":"Проводить родителей",
+  "接催收电话":"Ответить коллектору",
+  "办退休手续":"Оформить пенсию",
+  "跳广场舞":"Танцы на площади",
+  "抱一抱孙子":"Понянчить внука",
+  "出门看一次世界":"Увидеть мир",
+  "养花晒太阳":"Цветы и солнце",
+  "按时吃药":"Пить таблетки вовремя",
+  "一个人吃完晚饭":"Поужинать в одиночестве",
+  "看一次夕阳":"Посмотреть на закат",
+  "给儿女打个电话":"Позвонить детям",
+  "努力呼吸":"Дышать",
+  "想起很久以前":"Вспомнить былое",
+  "喝饱了":"Наелся молока",
+  "洒了一身":"Всё на себя разлил",
+  "「妈——妈」":"«Ма-а-ма»",
+  "没学会…":"Так и не научился…",
+  "抓到了书":"Схватил книгу",
+  "抓空了":"Схватил пустоту",
+  "第一步！":"Первый шаг!",
+  "摔了一跤":"Упал",
+  "免疫 ✓":"Иммунитет ✓",
+  "还是病倒了":"Всё-таки слёг",
+  "背上了":"Надел рюкзак",
+  "散了…":"Всё рассыпалось…",
+  "作业完成":"Уроки сделаны",
+  "撕了…":"Порвал…",
+  "背下来了":"Выучил",
+  "一句也没记住":"Ни строчки не запомнил",
+  "做得真齐":"Как по линейке",
+  "同手同脚…":"Путается в руках и ногах…",
+  "朋友 +1":"Друг +1",
+  "没交到":"Друга не нашёл",
+  "好玩！":"Как классно!",
+  "被没收了":"Отобрали",
+  "当选了 ✓":"Выбрали ✓",
+  "只有一票":"Всего один голос",
+  "全对":"Всё верно",
+  "全错…":"Всё неверно…",
+  "心跳了一下":"Сердце ёкнуло",
+  "没敢说出口":"Не решился сказать",
+  "背完了":"Всё выучил",
+  "睡着了…":"Уснул…",
+  "录取通知书":"Письмо о зачислении",
+  "没考上":"Не поступил",
+  "毕业了":"Выпуск",
+  "帽子没接住":"Шапку не поймал",
+  "已投递":"Отправлено",
+  "已读不回":"Прочитано, ответа нет",
+  "拿到 offer":"Получил оффер",
+  "婉拒了":"Вежливо отказали",
+  "有地方住了":"Есть где жить",
+  "没租到":"Не снял",
+  "天亮了":"Рассвет",
+  "蓝屏了":"Синий экран",
+  "在一起了":"Вместе",
+  "还是散了":"Расстались",
+  "攒够了":"Накопил",
+  "没攒住":"Не удержал",
+  "房产证到手":"Право собственности",
+  "被别人买走了":"Купили другие",
+  "我愿意":"Да, согласен",
+  "掉了…":"Обронил…",
+  "抱起来了":"Взял на руки",
+  "手忙脚乱":"Паника",
+  "新车！":"Новая машина!",
+  "抛锚了":"Заглохла",
+  "终于还清了":"Наконец выплатил",
+  "账单越来越多":"Счета растут",
+  "听懂了 ✓":"Понял ✓",
+  "气到拍桌":"Стукнул по столу",
+  "升职了":"Повысили",
+  "没升上去":"Не повысили",
+  "干杯！":"За тебя!",
+  "喝趴了":"Напился",
+  "几项超标":"Показатели выше нормы",
+  "一家人":"Вся семья",
+  "一个人":"Ты один",
+  "合个影":"Общее фото",
+  "都在看手机":"Все в телефонах",
+  "有劲儿了":"Силы появились",
+  "卡再没打开过":"Карта так и не пригодилась",
+  "送您到这":"Провожаю вас",
+  "花掉了":"Цветы осыпались",
+  "挂断了":"Сбросил",
+  "铃声不停":"Звенит без конца",
+  "退休了":"На пенсии",
+  "又被叫回去了":"Снова вызвали",
+  "跟上拍子":"В такт",
+  "踩到脚了":"Наступил на ногу",
+  "抱到孙子了":"Внук на руках",
+  "哭个不停":"Не перестаёт плакать",
+  "出门看世界":"В путь",
+  "轮子掉了":"Колесо отвалилось",
+  "开花了":"Расцвело",
+  "没养活":"Не выжило",
+  "按时吃了":"Выпил вовремя",
+  "药撒了一地":"Таблетки по всему полу",
+  "吃完了":"Доел",
+  "剩了一半":"Осталась половина",
+  "好看":"Красиво",
+  "云挡住了":"Закрыли облака",
+  "接通了":"Дозвонился",
+  "无人接听":"Не отвечает",
+  "还撑得住":"Ещё держусь",
+  "喘不上气":"Не хватает воздуха",
+  "想起了很多":"Столько вспомнилось",
+  "想不起来了":"Уже не вспомнить"
+}
+};
+
+// 带参数的界面文字
+const TPL = {
+zh:{
+  "age":"{0} 岁",
+  "combo":"×{0} 连击",
+  "remain":"剩余 {0} 秒",
+  "doneOf":"已完成 {0} / {1}",
+  "score":"得分 {0}",
+  "doneCnt":"做完 {0} / {1} 件",
+  "missCnt":"错过 {0} 件　·　最高连击 ×{1}",
+  "kept":"你留下了：{0}",
+  "rapid":"连点 ×{0}",
+  "pickTitle":"【{0}】",
+  "sep":"　"
+},
+en:{
+  "age":"AGE {0}",
+  "combo":"×{0} COMBO",
+  "remain":"{0}s LEFT",
+  "doneOf":"{0} / {1} DONE",
+  "score":"SCORE {0}",
+  "doneCnt":"{0} / {1} done",
+  "missCnt":"{0} missed　·　best combo ×{1}",
+  "kept":"You kept: {0}",
+  "rapid":"TAP ×{0}",
+  "pickTitle":"「{0}」",
+  "sep":", "
+},
+ja:{
+  "age":"{0} 歳",
+  "combo":"×{0} コンボ",
+  "remain":"残り {0} 秒",
+  "doneOf":"達成 {0} / {1}",
+  "score":"スコア {0}",
+  "doneCnt":"{0} / {1} 件 達成",
+  "missCnt":"逃した {0} 件　·　最高コンボ ×{1}",
+  "kept":"残したもの：{0}",
+  "rapid":"連打 ×{0}",
+  "pickTitle":"【{0}】",
+  "sep":"　"
+},
+ru:{
+  "age":"{0} лет",
+  "combo":"×{0} КОМБО",
+  "remain":"осталось {0} с",
+  "doneOf":"ГОТОВО {0} / {1}",
+  "score":"СЧЁТ {0}",
+  "doneCnt":"Сделано {0} / {1}",
+  "missCnt":"Упущено {0}　·　макс. комбо ×{1}",
+  "kept":"Ты оставил: {0}",
+  "rapid":"ЖМИ ×{0}",
+  "pickTitle":"«{0}»",
+  "sep":", "
+}
+};
+
+function T(s){
+  if(!s || lang === 'zh') return s;
+  const t = I18N[lang];
+  return (t && t[s] != null) ? t[s] : s;
+}
+function TF(k, a, b){
+  const g = TPL[lang] || TPL.zh;
+  let s = (g && g[k] != null) ? g[k] : TPL.zh[k];
+  return String(s).replace(/\{0\}/g, a == null ? '' : a).replace(/\{1\}/g, b == null ? '' : b);
+}
+function setLang(id){
+  if(LANG_ORDER.indexOf(id) < 0) id = 'zh';
+  lang = id;
+  try { localStorage.setItem('life_lang', id); } catch(e){}
+  try { document.documentElement.lang = (id === 'zh') ? 'zh-CN' : id; } catch(e){}
+  try { document.title = T('一生 · 100 秒'); } catch(e){}
+}
+// 首次进入：优先用上次选的，其次跟系统语言，最后英文
+(function initLang(){
+  let id = null;
+  try { id = localStorage.getItem('life_lang'); } catch(e){}
+  if(!id || LANG_ORDER.indexOf(id) < 0){
+    const n = String(navigator.language || navigator.userLanguage || '').toLowerCase();
+    id = (n.indexOf('zh') === 0) ? 'zh'
+       : (n.indexOf('ja') === 0) ? 'ja'
+       : (n.indexOf('ru') === 0) ? 'ru' : 'en';
   }
-  if(line) ctx.fillText(line, x, yy);
+  setLang(id);
+})();
+
+// 按可用宽度自动缩小字号（英文 / 俄文比中文长得多）
+function fitFont(text, maxW, size, weight, minSize){
+  minSize = minSize || 8;
+  let v = size;
+  ctx.font = (weight || '') + v + 'px ' + FONT;
+  while(v > minSize && ctx.measureText(text).width > maxW){
+    v -= 0.5; ctx.font = (weight || '') + v + 'px ' + FONT;
+  }
+  return v;
+}
+// 按宽度折行：有空格的语言按词断行，中日文按字断行
+function wrapLines(text, maxW){
+  const lines = [];
+  let line = '';
+  if(text.indexOf(' ') >= 0){
+    const words = text.split(' ');
+    for(let i=0;i<words.length;i++){
+      const t = line ? (line + ' ' + words[i]) : words[i];
+      if(line && ctx.measureText(t).width > maxW){ lines.push(line); line = words[i]; }
+      else line = t;
+    }
+  } else {
+    for(let i=0;i<text.length;i++){
+      const t = line + text[i];
+      if(line && ctx.measureText(t).width > maxW){ lines.push(line); line = text[i]; }
+      else line = t;
+    }
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+
+// ---------------- 语言切换按钮 ----------------
+const LB_BIG = { y:248, h:17, w:56, gap:6 };      // 开始界面：居中的一排
+const LB_SML = { y:259, h:11, w:42, x0:10 };      // 结算界面：左下角一行
+function langRowRect(i, big){
+  const B = big ? LB_BIG : LB_SML;
+  if(big){
+    const total = LANG_LIST.length*B.w + (LANG_LIST.length-1)*B.gap;
+    return [(WW - total)/2 + i*(B.w + B.gap), B.y, B.w, B.h];
+  }
+  return [B.x0 + i*(B.w + 1), B.y, B.w - 3, B.h];
+}
+function langHit(x, y, big){
+  for(let i=0;i<LANG_LIST.length;i++){
+    const r = langRowRect(i, big);
+    if(x >= r[0] && x <= r[0]+r[2] && y >= r[1] && y <= r[1]+r[3]) return i;
+  }
+  return -1;
+}
+function drawLangRow(big){
+  ctx.save();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for(let i=0;i<LANG_LIST.length;i++){
+    const r = langRowRect(i, big), on = (LANG_LIST[i][0] === lang);
+    roundRect(r[0], r[1], r[2], r[3], big ? 4 : 3,
+              on ? 'rgba(255,227,122,'+(big ? 0.20 : 0.16)+')' : 'rgba(255,255,255,0.05)');
+    ctx.strokeStyle = on ? '#ffe37a' : 'rgba(255,255,255,0.26)';
+    ctx.lineWidth = on ? 1.3 : 1;
+    ctx.strokeRect(r[0]+0.5, r[1]+0.5, r[2]-1, r[3]-1);
+    ctx.fillStyle = on ? '#ffe37a' : 'rgba(230,236,248,0.62)';
+    ctx.font = (big ? 10 : 8.5) + 'px ' + FONT;
+    ctx.fillText(LANG_LIST[i][1], r[0]+r[2]/2, r[1]+r[3]/2 + 0.5);
+  }
+  ctx.restore();
 }
 
 // ------------------------------------------------------------
-// 14. 调试入口（正常游玩不需要）
+// 15. 调试入口（正常游玩不需要）
 //     ?t=30        跳到第 30 秒
 //     &screen=final / result / menu
 //     &mute        静音
@@ -3039,6 +4016,8 @@ function wrapText(text, x, y, maxW, lh){
 (function debugEntry(){
   const q = location.search + location.hash;
   if(/[?&#]mute/.test(q)) muted = true;
+  const ml = /[?&#]lang=(zh|en|ja|ru)/.exec(q);
+  if(ml) setLang(ml[1]);
   const ms = /[?&#]screen=(\w+)/.exec(q);
   const mt = /[?&#]t=(\d+(?:\.\d+)?)/.exec(q);
   const mp = /[?&#]ap=(\d+(?:\.\d+)?)/.exec(q);
@@ -3077,15 +4056,35 @@ function wrapText(text, x, y, maxW, lh){
   const mf = /[?&#]fx=(\w+)/.exec(q);
   if(mf){
     noSpawn = true;
+    const keepGt = mt ? parseFloat(mt[1]) : 30;   // startGame() 会把 gt 归零，先记下来
     startGame(); noSpawn = true;
-    if(!mt){ gt = 30; worldX = 30*44; }
+    gt = keepGt; worldX = keepGt*44;
     playEvFX(mf[1], !/[?&#]ok=0/.test(q), null);
     const ff = evFX[evFX.length-1];
     const prog = mp ? parseFloat(mp[1]) : 0.42;
-    if(ff){ fxFreeze = true; ff.t = ff.dur * prog; }
+    if(ff){
+      fxFreeze = true; ff.t = ff.dur * prog;
+      // 定格时也要把"掉出来的东西"留在地上，否则看不到效果
+      const la = ff.d.leaveAt == null ? 0.86 : ff.d.leaveAt;
+      if(ff.d.leave && prog >= la){ ff._lv = 1; leaveFrom(ff); }
+    }
     if(heroAura) heroAura.t = heroAura.dur * prog;
     if(heroAnim) heroAnim.t = heroAnim.dur * prog;
   }
+  // 撒一排遗落物，看它们跟着背景慢慢后移
+  //   ?debris=0     刚掉下来
+  //   ?debris=90    背景已经往前走了 90px（东西相应退到左边）
+  const md = /[?&#]debris=(\d+)/.exec(q);
+  if(md){
+    noSpawn = true;
+    if(state !== 'play'){ startGame(); noSpawn = true; }
+    if(!mt){ gt = 30; worldX = 30*44; }
+    const kinds = ['book','paper','pill','coin','cup','key','ball','flower','phone','bag','cap','ring'];
+    const back = parseFloat(md[1]) || 0;
+    for(let i=0;i<11;i++) pushDebris(kinds[i % kinds.length], -66 + i*31 + back, 0, {flip:(i%2)===1});
+    for(const d of debris) d.t = 9;                 // 已经落定了
+  }
+
   // 定格随行同伴，看谁在陪小人走路
   //   ?mate=girl          一个女孩陪着走
   //   ?mate=bride&ap=2    到第 2 秒（婚纱 + 牵手）
@@ -3104,7 +4103,7 @@ function wrapText(text, x, y, maxW, lh){
 })();
 
 // ------------------------------------------------------------
-// 15. 启动
+// 16. 启动
 // ------------------------------------------------------------
 requestAnimationFrame(function(t){ last = t; requestAnimationFrame(loop); });
 </script>

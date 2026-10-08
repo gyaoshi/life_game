@@ -1,7 +1,9 @@
-# 临时调试产物
+# 临时调试产物 / 本地工具（保留在磁盘，不进仓库）
 _*.js
+_*.py
 _*.html
 _*.png
+_*.txt
 _zoom.html
 _zoom.png
 anim_*.png
@@ -12,6 +14,9 @@ shot_*.png
 m_*.png
 n_*.png
 f_*.png
+d_*.png
+L_*.png
+D_*.png
 
 # 工具运行时状态
 .workbuddy/
