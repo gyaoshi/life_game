@@ -54,7 +54,7 @@ Then you get graded in **8 tiers**, from *Winner at life* all the way down to *A
 - **Full localization: English · 中文 · 日本語 · Русский.** Switch languages any time from the menu or the results screen. The game auto-detects your browser language on first launch.
 - **96 bespoke success/failure animations** — every single one of the 48 events has its own pair of outcomes. Get the vaccine and an immunity shield rises from your feet; miss it and a swarm of viruses rains down. Shoulder the backpack and the straps tighten; miss it and the bag hits the ground and books scatter everywhere.
 - **Objects you drop stay behind.** Nothing pops out of existence. Whatever falls out of your hands settles on the ground and slowly drifts backward with the scenery — the task walks on, but the past stays in the past.
-- **Companions walk with you.** In 22 of the 48 events, succeeding means **someone walks beside you for 5 seconds** — a girlfriend, a bride, your parents, a child, a friend, a dog. A love interest makes way for the bride; the bride makes way for the child.
+- **Companions walk with you — then stay behind.** In 22 of the 48 events, succeeding means **someone walks beside you for 5 seconds** — a girlfriend, a bride, your parents, a child, a friend, a dog. They queue up shoulder to shoulder so nobody ever overlaps. And when their five seconds are up they don't blink out of existence: they stop, stay where they are, and drift back into the distance while you walk on. A love interest makes way for the bride; the bride makes way for the child.
 - **Everything is generated in code.** Every sprite, every note, every grunt is synthesized at runtime. There is not a single asset file in the build.
 - **Single file, zero dependencies.** One HTML file. No install, no download size, no network. Open it in a browser and play.
 
@@ -112,6 +112,7 @@ Free — **or** "Name your own price" (suggested: $0 with an optional tip). It's
 | `dist/shot-1-menu.png` | 100 seconds. One life. Pick your language and begin. |
 | `dist/shot-2-play.png` | Tap, mash, hold, drag, choose — the windows keep closing. |
 | `dist/shot-3-mates.png` | Get it right and someone walks beside you. |
+| `dist/shot-9-companions.png` | Companions queue up — they never overlap. |
 | `dist/shot-4-debris.png` | Drop something? It stays on the ground and drifts into the past. |
 | `dist/shot-5-final.png` | Eight cards. You may take only one. |
 | `dist/shot-6-result.png` | Then you're graded — from "Winner at life" to "A walking husk." |
@@ -172,7 +173,7 @@ Free — **or** "Name your own price" (suggested: $0 with an optional tip). It's
 - **完整多语言：English · 中文 · 日本語 · Русский。** 在开始界面或结算界面随时切换；首次进入时会按浏览器语言自动选择。
 - **96 套专属成功/失败动画** —— 48 件事，每一件都配了**自己的**一对演出。打疫苗成功，蓝色免疫护盾从脚下升起；失败，病毒成群落下来。背书包成功，肩带收紧；失败，书包砸在地上、书本四散。
 - **掉在地上的东西不会消失。** 没有任何东西凭空蒸发——从手里掉出去的东西会落在地上，跟着背景慢慢后移。任务往前走了，过去留在过去。
-- **有人陪你走。** 48 件事里有 22 件，成功后**会有人陪着你走 5 秒**——恋人、新娘、父母、孩子、朋友、狗。恋人出现会让上一任让位；新娘一上场，恋人先退场；孩子出生，新娘退场。
+- **有人陪你走，然后留在原地。** 48 件事里有 22 件，成功后**会有人陪着你走 5 秒**——恋人、新娘、父母、孩子、朋友、狗。他们会自动排队并肩走，绝不前后重叠；五秒一到也不会凭空消失，而是停下来停在原处，随着你继续往前走，慢慢退到身后。恋人出现会让上一任让位；新娘一上场，恋人先退场；孩子出生，新娘退场。
 - **所有东西都由代码实时生成。** 每一帧画面、每一个音符、每一声含糊的人声都是运行时算出来的——打包里没有任何一个素材文件。
 - **单文件、零依赖。** 就一个 HTML 文件。不用装、不用下、不用联网，浏览器里打开就是游戏。
 
@@ -230,6 +231,7 @@ Free — **or** "Name your own price" (suggested: $0 with an optional tip). It's
 | `dist/shot-1-menu.png` | 100 秒，一辈子。选好语言就开始。 |
 | `dist/shot-2-play.png` | 点、连点、按住、拖拽、选择——窗口一个比一个急。 |
 | `dist/shot-3-mates.png` | 做对了，会有人陪你一起走。 |
+| `dist/shot-9-companions.png` | 同伴会自动排队并肩走，绝不前后重叠。 |
 | `dist/shot-4-debris.png` | 掉在地上的东西不会消失，它跟着背景慢慢退向过去。 |
 | `dist/shot-5-final.png` | 八张卡片。你只能带走一样。 |
 | `dist/shot-6-result.png` | 然后你被评分——从「人生赢家」到「一具行走的躯壳」。 |
@@ -261,7 +263,7 @@ Free — **or** "Name your own price" (suggested: $0 with an optional tip). It's
 | 项目 | 说明 |
 |---|---|
 | **Cover image** | **必填**，建议 630×500（≥315×250）。目前仓库里还没有，可以用 `dist/shot-5-final.png` 或 `shot-2-play.png` 临时顶替，也可以单独做一张标题卡。 |
-| **Screenshots** | `dist/shot-1..8*.png`，8 张 1440×810，直接拖进上传框。 |
+| **Screenshots** | `dist/shot-1..9*.png`，9 张 1440×810，直接拖进上传框。 |
 | **Kind of project** | `HTML` （itch.io 会直接托管、在浏览器里跑）。 |
 | **Uploads** | 把 `life-game.html` **改名成 `index.html`** 再压缩成 zip 上传——itch.io 默认只认 zip 根目录下的 `index.html`。 |
 | **Viewport / Embed** | 建议勾选 `Mobile friendly` 并让画面自适应；游戏本身已经处理了触摸与缩放。 |

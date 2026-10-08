@@ -1827,8 +1827,17 @@ const MATE = {
   child:  {s:0.66, hair:'#2b2b33', shirt:'#f2c33d', pants:'#3a5fa0', link:1, kid:1},
   pet:    {s:0.74, dog:1}
 };
-const MATE_SLOT = { 1:[-27], 2:[-27,27], 3:[-27,27,47], 4:[-27,27,47,-47] };
+// 跟队位置：离小人越近的排越前面。
+// 新来的人只挑「此刻没人占」的位置，所以同时在场的人不会前后重叠。
+const MATE_SLOT_ORDER = [-28, 28, -54, 54, -80];
+const MATE_MAX_ALL    = 16;      // 兜底上限（含已经"留在过去"、正在飘走的那些）
 let mates = [];
+
+// 空位分配：优先给离小人最近的空位；挤满了就返回 null（这次就不来了）
+function mateFindSlot(used, pref){
+  for(const s of pref) if(used.indexOf(s) < 0) return s;
+  return null;
+}
 
 function spawnMates(spec, opt){
   opt = opt || {};
@@ -1837,52 +1846,82 @@ function spawnMates(spec, opt){
   for(const k of kinds) if(MATE[k] && uniq.indexOf(k) < 0) uniq.push(k);
   if(!uniq.length) return;
   const dur = opt.dur || MATE_DUR;
-  // 同一个人不重复上场：还在场上的，把陪走的时间直接续上
+  // 同一个人不重复上场：还在**跟队**的，把陪走的时间直接续上。
+  // 已经"留在过去"的不算——那是上一段人生里的旧人了，可以再遇到一个新的。
   const fresh = [];
   for(const k of uniq){
-    const old = mates.filter(function(m){ return m.kind === k && m.t < m.dur; })[0];
+    const old = mates.filter(function(m){ return m.kind === k && !m.left; })[0];
     if(old) old.dur = Math.max(old.dur, old.t + dur);
     else fresh.push(k);
   }
   // 换人：恋人 → 新娘 → 有了孩子，前一任快速让位
   for(const k of uniq){
-    if(k === 'bride') for(const m of mates) if(m.kind === 'girl')  m.dur = Math.min(m.dur, m.t + 0.6);
-    if(k === 'child') for(const m of mates) if(m.kind === 'bride') m.dur = Math.min(m.dur, m.t + 1.0);
+    if(k === 'bride') for(const m of mates) if(m.kind === 'girl'  && !m.left) m.dur = Math.min(m.dur, m.t + 0.6);
+    if(k === 'child') for(const m of mates) if(m.kind === 'bride' && !m.left) m.dur = Math.min(m.dur, m.t + 1.0);
   }
   if(!fresh.length) return;
-  const slots = opt.slots || MATE_SLOT[Math.min(4, fresh.length)] || [-27];
+  // 已经被占的位置：只算还在跟队的人，留在过去的那些不占名额
+  const used = [];
+  for(const m of mates) if(!m.left && m.slot != null) used.push(m.slot);
+  const dx = opt.dx || 0;
   for(let i=0;i<fresh.length;i++){
     const k = fresh[i], c = MATE[k];
+    let slot;
+    if(opt.slots){                                  // 手写位置（送别父母 / 三个虚影）
+      slot = opt.slots[i % opt.slots.length];
+    } else {
+      slot = mateFindSlot(used, MATE_SLOT_ORDER);
+      if(slot === null) break;                      // 五个位置都满了，这次就不来了
+      used.push(slot);
+    }
     mates.push({
-      kind:k, cfg:c, t:0, dur:dur,
-      ox: slots[i % slots.length] + (opt.dx || 0),
+      kind:k, cfg:c, t:0, dur:dur, slot:slot, ox:slot + dx,
       enter: opt.enter == null ? 0.62 : opt.enter,
       from: WW + 24 + i*16,
       ph: Math.random()*6.28,
       ghost: !!(opt.ghost || c.ghost),
-      exit: opt.exit || c.exit || 'fade'
+      exit: opt.exit || c.exit || 'fade',
+      left:false, w0:0, lox:slot + dx             // left / w0 / lox：陪走结束后的"钉住"状态
     });
   }
-  while(mates.length > 5) mates.shift();
+  // 兜底上限：优先清掉最早"留在过去"的那个，别误伤还在跟队的人
+  while(mates.length > MATE_MAX_ALL){
+    const i = mates.findIndex(function(m){ return m.left; });
+    mates.splice(i < 0 ? 0 : i, 1);
+  }
 }
 function stepMates(dt){
   if(mateFreeze) return;
   for(let i=mates.length-1;i>=0;i--){
     const m = mates[i];
     m.t += dt;
-    if(m.t >= m.dur) mates.splice(i,1);
+    // 陪走结束：不是消失，而是"停在原地"——
+    // 从此不再跟着小人往前走，跟着背景一起慢慢后移（和遗落物一个道理）
+    if(!m.left && m.t >= m.dur){
+      m.left = true;
+      m.w0   = worldX;                             // 记下脱离那一刻的世界坐标
+      m.lox  = m.ox - (m.exit === 'out' ? 84 : 0); // "送别"那类已经往左走远过了
+    }
+    // 完全退出画面左侧才回收
+    if(m.left && (m.lox - (worldX - m.w0)) < -166) mates.splice(i,1);
   }
+}
+// 队伍里谁牵小人的手：只挑「离小人最近、且已经站定」的那一个。
+// 其余的人空着手走——否则一队人每只胳膊都往空气里伸。
+function mateLinker(){
+  let best = null;
+  for(const m of mates){
+    if(m.ghost || m.left || !m.cfg.link) continue;
+    if(m.t < m.enter) continue;
+    if(!best || Math.abs(m.ox) < Math.abs(best.ox)) best = m;
+  }
+  return best;
 }
 // 牵手：返回 -1 同伴在左 / +1 同伴在右 / 0 不牵
 function heroLinkDir(){
-  let d = 0;
-  for(const m of mates){
-    if(m.ghost || !m.cfg.link) continue;
-    if(m.t < m.enter) continue;
-    if(m.ox < 0) d = -1;
-    else if(m.ox > 0 && d >= 0) d = 1;
-  }
-  return d;
+  const m = mateLinker();
+  if(!m) return 0;
+  return m.ox < 0 ? -1 : 1;
 }
 function pxHeart(x, y, k, col){
   wpx(x-2*k, y-k,   2*k, 2*k, col);
@@ -1893,27 +1932,35 @@ function pxHeart(x, y, k, col){
 }
 
 function drawMates(heroX, feetY){
-  for(const m of mates) drawMate(m, heroX, feetY);
+  const lk = mateLinker();                    // 这一帧谁牵着小人的手
+  for(const m of mates) drawMate(m, heroX, feetY, lk === m);
 }
 
-function drawMate(m, heroX, feetY){
+function drawMate(m, heroX, feetY, linked){
   const c  = m.cfg;
-  const u  = m.t / m.dur;
-  const ep = uclamp(m.t / m.enter);
+  const u  = m.left ? 1 : m.t / m.dur;
+  const ep = m.left ? 1 : uclamp(m.t / m.enter);
   const el = fxEase(ep);
   const target = heroX + m.ox;
 
-  let x = target + (1 - el) * (m.from - target);
-  // 退场："送别"那类会往左走远
-  if(m.exit === 'out'){
-    const ex = uclamp((m.t - (m.dur - 1.5)) / 1.5);
-    x -= ex*ex*84;
+  let x;
+  if(m.left){
+    // 陪走结束之后：不再跟着小人走，就地钉在世界里，跟着背景一起后移
+    x = heroX + m.lox - (worldX - m.w0);
+  } else {
+    x = target + (1 - el) * (m.from - target);
+    // 退场："送别"那类会往左走远
+    if(m.exit === 'out'){
+      const ex = uclamp((m.t - (m.dur - 1.5)) / 1.5);
+      x -= ex*ex*84;
+    }
   }
-  let alpha = fxLife(u, 0.06, 0.24) * (0.25 + 0.75*ep);
+  let alpha = m.left ? 1 : fxLife(u, 0.06, 0.24) * (0.25 + 0.75*ep);
   if(m.ghost) alpha *= 0.52;
+  alpha *= 0.25 + 0.75*uclamp((x + 26) / 34);   // 快滑出画面左侧时淡掉
   if(alpha <= 0.02) return;
 
-  const walking = (state === 'play') && !heroAnim && ep >= 1;
+  const walking = (state === 'play') && !heroAnim && ep >= 1 && !m.left;
   const s = c.s;
   const f = Math.floor(animT*7 + m.ph) % 4;
   let bob = 0;
@@ -1982,8 +2029,7 @@ function drawMate(m, heroX, feetY){
   if(c.tie) P(-1.2,-19.2, 2.4, 6.4, '#c03a3a');
 
   // ---------- 手臂（内侧那一只伸出去牵手） ----------
-  const linkOn = c.link && !m.ghost && m.t >= m.enter;
-  const dir = linkOn ? (m.ox < 0 ? 1 : -1) : 0;
+  const dir = linked ? (m.ox < 0 ? 1 : -1) : 0;   // 只有队伍里最靠前那个才牵手
   if(dir > 0){                     // 同伴在小人左边 → 伸右手
     P(-7,-20+swing*0.5, 2.6, 9+swing, shirt);
     P(-7,-11.4+swing*0.5, 2.8,2.6, skin);
@@ -4108,6 +4154,12 @@ function drawLangRow(big){
     const at = mp ? parseFloat(mp[1]) : 1.6;
     for(const m of mates) m.t = at;
     mateFreeze = true;
+    // &left=NN —— 让他们已经"陪走结束、留在原地"了，而且世界已经往前走过 NN 像素
+    const mleft = /[?&#]left=(\d+)/.exec(q);
+    if(mleft){
+      const back = parseFloat(mleft[1]);
+      for(const m of mates){ m.t = m.dur; m.left = true; m.w0 = worldX - back; m.lox = m.ox; }
+    }
   }
 })();
 
