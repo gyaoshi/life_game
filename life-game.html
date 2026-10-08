@@ -218,59 +218,59 @@ function musicTick(){
 const LIFE = [
   // —— 婴幼儿 ——
   {type:'tap',  n:'喝到第一口奶', ic:'milk',    d:3.0, ok:'milkOk', no:'milkNo'},
-  {type:'rapid',n:'学会喊妈妈',   ic:'baby',    d:2.9, need:7, ok:'momOk', no:'momNo'},
+  {type:'rapid',n:'学会喊妈妈',   ic:'baby',    d:2.9, need:7, ok:'momOk', mate:'mom', no:'momNo'},
   {type:'pick', n:'抓周',         ic:'book',    d:3.0, opts:['书','钞票','公章'], right:0, ok:'zhouOk', no:'zhouNo'},
-  {type:'hold', n:'迈出第一步',   ic:'ball',    d:2.7, hold:0.5, ok:'stepOk', no:'stepNo'},
-  {type:'tap',  n:'打疫苗不能哭', ic:'syringe', d:2.5, ok:'vacOk', no:'vacNo'},
+  {type:'hold', n:'迈出第一步',   ic:'ball',    d:2.7, hold:0.5, ok:'stepOk', mate:'mom,dad', no:'stepNo'},
+  {type:'tap',  n:'打疫苗不能哭', ic:'syringe', d:2.5, ok:'vacOk', mate:'mom', no:'vacNo'},
   {type:'drag', n:'背上小书包',   ic:'bag',     d:3.0, ok:'bagOk', no:'bagNo'},
   // —— 小学 ——
   {type:'rapid',n:'写完今天的作业',ic:'pen',    d:2.7, need:7, ok:'hwOk', no:'hwNo'},
   {type:'tap',  n:'背下这首古诗', ic:'book',    d:2.5, ok:'poemOk', no:'poemNo'},
-  {type:'rapid',n:'广播体操',     ic:'star',    d:2.7, need:7, ok:'gymOk', no:'gymNo'},
-  {type:'tap',  n:'交到第一个朋友',ic:'heart',  d:2.5, k:1, ok:'friendOk', no:'friendNo'},
+  {type:'rapid',n:'广播体操',     ic:'star',    d:2.7, need:7, ok:'gymOk', mate:'boy,girl', no:'gymNo'},
+  {type:'tap',  n:'交到第一个朋友',ic:'heart',  d:2.5, k:1, ok:'friendOk', mate:'boy', no:'friendNo'},
   {type:'tap',  n:'偷玩十分钟游戏',ic:'gamepad',d:2.4, ok:'gameOk', no:'gameNo'},
   {type:'pick', n:'竞选班干部',   ic:'cap',     d:2.9, opts:['我想为大家服务','我请大家吃辣条','我爸是家委会'], right:2, ok:'voteOk', no:'voteNo'},
   // —— 中学 ——
   {type:'rapid',n:'刷完这套卷子', ic:'pen',     d:2.7, need:7, ok:'testOk', no:'testNo'},
-  {type:'tap',  n:'偷偷喜欢的人', ic:'heart',   d:2.5, k:1, ok:'crushOk', no:'crushNo'},
+  {type:'tap',  n:'偷偷喜欢的人', ic:'heart',   d:2.5, k:1, ok:'crushOk', mate:'crush', no:'crushNo'},
   {type:'hold', n:'熬夜复习',     ic:'book',    d:2.7, hold:0.55, ok:'nightOk', no:'nightNo'},
   {type:'rapid',n:'高考',         ic:'paper',   d:3.1, need:8, ok:'gkOk', no:'gkNo'},
-  {type:'tap',  n:'毕业合影',     ic:'cap',     d:2.5, ok:'gradOk', no:'gradNo'},
+  {type:'tap',  n:'毕业合影',     ic:'cap',     d:2.5, ok:'gradOk', mate:'boy,girl', no:'gradNo'},
   // —— 青年 ——
   {type:'tap',  n:'投出第 87 份简历',ic:'paper',d:2.2, ok:'resumeOk', no:'resumeNo'},
   {type:'pick', n:'面试',         ic:'briefcase',d:2.9,opts:['我不会但我可以学','我精通一切','我要求双休'], right:1, ok:'itvOk', no:'itvNo'},
   {type:'drag', n:'租一间城中村', ic:'house',   d:2.5, ok:'rentOk', no:'rentNo'},
-  {type:'rapid',n:'通宵加班',     ic:'briefcase',d:2.7,need:7, ok:'otOk', no:'otNo'},
-  {type:'tap',  n:'谈恋爱',       ic:'heart',   d:2.3, k:1, ok:'loveOk', no:'loveNo'},
+  {type:'rapid',n:'通宵加班',     ic:'briefcase',d:2.7,need:7, ok:'otOk', mate:'mate', no:'otNo'},
+  {type:'tap',  n:'谈恋爱',       ic:'heart',   d:2.3, k:1, ok:'loveOk', mate:'girl', no:'loveNo'},
   {type:'rapid',n:'攒首付',       ic:'coin',    d:2.9, need:7, ok:'saveOk', no:'saveNo'},
-  {type:'drag', n:'买下那套房',   ic:'house',   d:2.7, k:1, ok:'houseOk', no:'houseNo'},
-  {type:'drag', n:'戴上戒指',     ic:'ring',    d:2.7, k:1, ok:'ringOk', no:'ringNo'},
-  {type:'hold', n:'抱起新生的孩子',ic:'baby',   d:2.6, hold:0.5, k:1, ok:'babyOk', no:'babyNo'},
+  {type:'drag', n:'买下那套房',   ic:'house',   d:2.7, k:1, ok:'houseOk', mate:'girl', no:'houseNo'},
+  {type:'drag', n:'戴上戒指',     ic:'ring',    d:2.7, k:1, ok:'ringOk', mate:'bride', no:'ringNo'},
+  {type:'hold', n:'抱起新生的孩子',ic:'baby',   d:2.6, hold:0.5, k:1, ok:'babyOk', mate:'child', no:'babyNo'},
   {type:'tap',  n:'提走人生第一辆车',ic:'car',  d:2.1, ok:'carOk', no:'carNo'},
   // —— 中年 ——
   {type:'rapid',n:'还房贷',       ic:'coin',    d:2.7, need:7, ok:'loanOk', no:'loanNo'},
-  {type:'rapid',n:'辅导孩子作业', ic:'book',    d:2.5, need:6, ok:'tutorOk', no:'tutorNo'},
+  {type:'rapid',n:'辅导孩子作业', ic:'book',    d:2.5, need:6, ok:'tutorOk', mate:'child', no:'tutorNo'},
   {type:'pick', n:'升职答辩',     ic:'briefcase',d:2.7,opts:['讲业绩','讲情怀','讲领导好'], right:2, ok:'promoOk', no:'promoNo'},
-  {type:'rapid',n:'应酬敬酒',     ic:'cup',     d:2.5, need:6, ok:'toastOk', no:'toastNo'},
+  {type:'rapid',n:'应酬敬酒',     ic:'cup',     d:2.5, need:6, ok:'toastOk', mate:'mate', no:'toastNo'},
   {type:'pick', n:'翻开体检报告', ic:'cross',   d:2.7, opts:['一切正常','轻度脂肪肝','建议复查'], right:0, ok:'healthOk', no:'healthNo'},
-  {type:'tap',  n:'回家陪父母吃顿饭',ic:'heart',d:2.4, k:1, ok:'dinnerOk', no:'dinnerNo'},
-  {type:'tap',  n:'同学聚会',     ic:'cup',     d:2.1, ok:'reunionOk', no:'reunionNo'},
+  {type:'tap',  n:'回家陪父母吃顿饭',ic:'heart',d:2.4, k:1, ok:'dinnerOk', mate:'olddad,oldmom', no:'dinnerNo'},
+  {type:'tap',  n:'同学聚会',     ic:'cup',     d:2.1, ok:'reunionOk', mate:'boy,girl', no:'reunionNo'},
   {type:'hold', n:'办那张健身卡', ic:'ball',    d:2.5, hold:0.55, ok:'gym2Ok', no:'gym2No'},
-  {type:'hold', n:'送别父母',     ic:'flower',  d:3.1, hold:0.6, k:1, ok:'farewellOk', no:'farewellNo'},
+  {type:'hold', n:'送别父母',     ic:'flower',  d:3.1, hold:0.6, k:1, ok:'farewellOk', mate:'olddad,oldmom', mateOpt:{dur:4.4, exit:'out', slots:[-27,-49]}, no:'farewellNo'},
   {type:'tap',  n:'接催收电话',   ic:'phone',   d:2.1, ok:'debtOk', no:'debtNo'},
   // —— 老年 ——
   {type:'tap',  n:'办退休手续',   ic:'clock',   d:2.3, ok:'retireOk', no:'retireNo'},
-  {type:'rapid',n:'跳广场舞',     ic:'note',    d:2.5, need:6, ok:'danceOk', no:'danceNo'},
-  {type:'hold', n:'抱一抱孙子',   ic:'baby',    d:2.6, hold:0.55, k:1, ok:'grandOk', no:'grandNo'},
-  {type:'drag', n:'出门看一次世界',ic:'car',    d:2.5, ok:'travelOk', no:'travelNo'},
+  {type:'rapid',n:'跳广场舞',     ic:'note',    d:2.5, need:6, ok:'danceOk', mate:'dancer,dancer', no:'danceNo'},
+  {type:'hold', n:'抱一抱孙子',   ic:'baby',    d:2.6, hold:0.55, k:1, ok:'grandOk', mate:'child', no:'grandNo'},
+  {type:'drag', n:'出门看一次世界',ic:'car',    d:2.5, ok:'travelOk', mate:'pet', no:'travelNo'},
   {type:'tap',  n:'养花晒太阳',   ic:'flower',  d:2.3, ok:'flowerOk', no:'flowerNo'},
   {type:'rapid',n:'按时吃药',     ic:'pill',    d:2.5, need:6, ok:'pillOk', no:'pillNo'},
   {type:'hold', n:'一个人吃完晚饭',ic:'cup',    d:2.6, hold:0.6, k:1, ok:'aloneOk', no:'aloneNo'},
-  {type:'tap',  n:'看一次夕阳',   ic:'sun',     d:2.8, k:1, ok:'sunsetOk', no:'sunsetNo'},
+  {type:'tap',  n:'看一次夕阳',   ic:'sun',     d:2.8, k:1, ok:'sunsetOk', mate:'wife', no:'sunsetNo'},
   {type:'tap',  n:'给儿女打个电话',ic:'phone',  d:2.8, k:1, ok:'callOk', no:'callNo'},
   // —— 临终 ——
   {type:'rapid',n:'努力呼吸',     ic:'heart',   d:3.0, need:7, ok:'breathOk', no:'breathNo'},
-  {type:'tap',  n:'想起很久以前', ic:'star',    d:3.0, k:1, ok:'memOk', no:'memNo'}
+  {type:'tap',  n:'想起很久以前', ic:'star',    d:3.0, k:1, ok:'memOk', mate:'girl,child,mom', mateOpt:{ghost:true, dur:4.8, enter:1.3, slots:[-27,-49,-71], dx:0}, no:'memNo'}
 ];
 
 // 每个事件对应的真实年龄（岁），必须单调不减 —— 用来把"秒"换算成"岁"
@@ -511,6 +511,7 @@ let animT = 0;
 let heroAnim = null;
 let animFreeze = false;   // 仅调试入口使用
 let fxFreeze = false;     // 仅调试入口使用（定格结果动画）
+let mateFreeze = false;   // 仅调试入口使用（定格随行同伴位置）
 let noSpawn  = false;     // 仅调试入口使用（暂停事件生成，便于观察特效）
 
 // 各动作时长（秒）
@@ -1693,6 +1694,260 @@ function drawHeroAura(hx, hy, s){
   }
 }
 
+// ============================================================
+//  随行同伴：恋爱 / 结婚 / 生小孩 … 陪你走一段路
+//  —— 事件成功后 spawnMates()，默认陪走 5 秒，然后自然淡出
+// ============================================================
+const MATE_DUR = 5.0;
+const MATE = {
+  // 恋人 → 新娘 → 老伴
+  girl:   {s:0.94, hair:'#3a2b2b', shirt:'#ff9ec4', pants:'#d4548c', long:1, link:1, heart:1},
+  crush:  {s:0.90, hair:'#2b2b33', shirt:'#ffd7e6', pants:'#e080a8', long:1, link:1, heart:1, shy:1},
+  bride:  {s:0.97, hair:'#2b2b33', shirt:'#ffffff', dress:'#fbfbff', long:1, link:1, veil:1, bouquet:1, heart:1},
+  wife:   {s:0.92, hair:'#d8d8de', shirt:'#e8c9a8', pants:'#b08a68', long:1, link:1, old:1},
+  // 家人
+  mom:    {s:1.00, hair:'#2b2b33', shirt:'#d2688f', pants:'#7a4a6a', long:1, link:1},
+  dad:    {s:1.05, hair:'#2b2b33', shirt:'#4a6a8a', pants:'#333f52', link:1},
+  oldmom: {s:0.93, hair:'#dcdce2', shirt:'#a89a86', pants:'#6a6a78', long:1, old:1, link:1},
+  olddad: {s:0.98, hair:'#e2e2e8', shirt:'#8a8a96', pants:'#5a5a68', old:1, link:1},
+  // 朋友 / 同学 / 同事
+  boy:    {s:0.92, hair:'#2b2b33', shirt:'#5fb8f0', pants:'#2f4a80', link:1},
+  mate:   {s:1.00, hair:'#2b2b33', shirt:'#7a8290', pants:'#3a4050', tie:1, bag:1},
+  dancer: {s:0.92, hair:'#dcdce2', shirt:'#ff9ec4', pants:'#d4548c', old:1},
+  // 孩子 / 宠物
+  child:  {s:0.66, hair:'#2b2b33', shirt:'#f2c33d', pants:'#3a5fa0', link:1, kid:1},
+  pet:    {s:0.74, dog:1}
+};
+const MATE_SLOT = { 1:[-27], 2:[-27,27], 3:[-27,27,47], 4:[-27,27,47,-47] };
+let mates = [];
+
+function spawnMates(spec, opt){
+  opt = opt || {};
+  const kinds = (typeof spec === 'string') ? spec.split(',') : (spec || []);
+  const uniq  = [];
+  for(const k of kinds) if(MATE[k] && uniq.indexOf(k) < 0) uniq.push(k);
+  if(!uniq.length) return;
+  const dur = opt.dur || MATE_DUR;
+  // 同一个人不重复上场：还在场上的，把陪走的时间直接续上
+  const fresh = [];
+  for(const k of uniq){
+    const old = mates.filter(function(m){ return m.kind === k && m.t < m.dur; })[0];
+    if(old) old.dur = Math.max(old.dur, old.t + dur);
+    else fresh.push(k);
+  }
+  // 换人：恋人 → 新娘 → 有了孩子，前一任快速让位
+  for(const k of uniq){
+    if(k === 'bride') for(const m of mates) if(m.kind === 'girl')  m.dur = Math.min(m.dur, m.t + 0.6);
+    if(k === 'child') for(const m of mates) if(m.kind === 'bride') m.dur = Math.min(m.dur, m.t + 1.0);
+  }
+  if(!fresh.length) return;
+  const slots = opt.slots || MATE_SLOT[Math.min(4, fresh.length)] || [-27];
+  for(let i=0;i<fresh.length;i++){
+    const k = fresh[i], c = MATE[k];
+    mates.push({
+      kind:k, cfg:c, t:0, dur:dur,
+      ox: slots[i % slots.length] + (opt.dx || 0),
+      enter: opt.enter == null ? 0.62 : opt.enter,
+      from: WW + 24 + i*16,
+      ph: Math.random()*6.28,
+      ghost: !!(opt.ghost || c.ghost),
+      exit: opt.exit || c.exit || 'fade'
+    });
+  }
+  while(mates.length > 5) mates.shift();
+}
+function stepMates(dt){
+  if(mateFreeze) return;
+  for(let i=mates.length-1;i>=0;i--){
+    const m = mates[i];
+    m.t += dt;
+    if(m.t >= m.dur) mates.splice(i,1);
+  }
+}
+// 牵手：返回 -1 同伴在左 / +1 同伴在右 / 0 不牵
+function heroLinkDir(){
+  let d = 0;
+  for(const m of mates){
+    if(m.ghost || !m.cfg.link) continue;
+    if(m.t < m.enter) continue;
+    if(m.ox < 0) d = -1;
+    else if(m.ox > 0 && d >= 0) d = 1;
+  }
+  return d;
+}
+function pxHeart(x, y, k, col){
+  wpx(x-2*k, y-k,   2*k, 2*k, col);
+  wpx(x,     y-k,   2*k, 2*k, col);
+  wpx(x-3*k, y,     6*k, 2*k, col);
+  wpx(x-2*k, y+2*k, 4*k, 1*k, col);
+  wpx(x-1*k, y+3*k, 2*k, 1*k, col);
+}
+
+function drawMates(heroX, feetY){
+  for(const m of mates) drawMate(m, heroX, feetY);
+}
+
+function drawMate(m, heroX, feetY){
+  const c  = m.cfg;
+  const u  = m.t / m.dur;
+  const ep = uclamp(m.t / m.enter);
+  const el = fxEase(ep);
+  const target = heroX + m.ox;
+
+  let x = target + (1 - el) * (m.from - target);
+  // 退场："送别"那类会往左走远
+  if(m.exit === 'out'){
+    const ex = uclamp((m.t - (m.dur - 1.5)) / 1.5);
+    x -= ex*ex*84;
+  }
+  let alpha = fxLife(u, 0.06, 0.24) * (0.25 + 0.75*ep);
+  if(m.ghost) alpha *= 0.52;
+  if(alpha <= 0.02) return;
+
+  const walking = (state === 'play') && !heroAnim && ep >= 1;
+  const s = c.s;
+  const f = Math.floor(animT*7 + m.ph) % 4;
+  let bob = 0;
+  if(walking) bob = c.kid ? ((f===1||f===3) ? -2.4 : 0) : ((f===1||f===3) ? -1 : 0);
+  if(m.ghost) bob += Math.sin(animT*1.1 + m.ph) * 1.4;
+  const yy = feetY + bob;
+
+  octx.globalAlpha = alpha;
+  octx.fillStyle = 'rgba(0,0,0,' + (0.15*alpha).toFixed(3) + ')';
+  octx.fillRect(x - 8*s, feetY - 1.5, 16*s, 2.6);
+
+  const P = function(dx,dy,w,h,col){ wpx(x + dx*s, yy + dy*s, w*s, h*s, col); };
+  const skin  = c.skin  || '#f7cfa4';
+  const hair  = c.hair  || '#2b2b33';
+  const shirt = c.shirt || '#dddddd';
+  const pants = c.pants || '#3a3a48';
+  const swing = walking ? (f<2 ? 1 : -1) : 0;
+
+  // ---------- 宠物（四足） ----------
+  if(c.dog){
+    const wag = Math.sin(animT*9 + m.ph)*2.6;
+    const st  = walking ? Math.sin(animT*12 + m.ph)*1.4 : 0;
+    P(-9.4, -10.5 + wag*0.4, 2.6, 2.0, '#b8824a');                       // 尾巴
+    P(-11.8, -12.2 + wag*0.7, 2.4, 2.0, '#b8824a');
+    P(-6.2, -4.2, 2.2, 4.2 + st, '#b8824a');                             // 四条腿
+    P(-3.0, -4.2, 2.2, 4.2 - st, '#b8824a');
+    P( 2.4, -4.2, 2.2, 4.2 - st, '#b8824a');
+    P( 5.4, -4.2, 2.2, 4.2 + st, '#b8824a');
+    P(-8.6, -9.8, 14.6, 5.6, '#c8935a');                                 // 身体
+    P(-8.6, -9.8, 14.6, 1.9, '#d8a86e');
+    P( 5.0, -13.4, 6.6, 6.6, '#d8a06a');                                 // 头
+    P( 5.6, -15.0, 2.6, 2.8, '#8a5a2a');                                 // 耳朵
+    P(11.2, -11.8, 2.8, 2.2, '#3a2a1a');                                 // 鼻子
+    P( 8.6, -11.8, 1.6, 1.6, '#2b2b33');                                 // 眼睛
+    P( 4.4, -9.8, 2.6, 1.6, '#e0483c');                                  // 项圈
+    octx.globalAlpha = 1;
+    return;
+  }
+
+  // ---------- 腿 ----------
+  if(c.dress){
+    P(-3.2,-7.4, 2.2,7.0, '#f0dcc8'); P(1.0,-7.4, 2.2,7.0, '#f0dcc8');
+    P(-3.6,-1.2, 3.2,1.5, '#e8d0b8'); P(1.0,-1.2, 3.2,1.5, '#e8d0b8');
+  } else if(walking){
+    const l1 = (f===0||f===1) ? 1 : -1;
+    P(-4,-9, 3, 9+l1, pants); P(1,-9, 3, 9-l1, pants);
+    P(-4.4,-1, 3.6,1.5, '#2b2b33'); P(1,-1, 3.6,1.5, '#2b2b33');
+  } else {
+    P(-4,-9, 3,9, pants); P(1,-9, 3,9, pants);
+    P(-4.4,-1, 3.6,1.5, '#2b2b33'); P(1,-1, 3.6,1.5, '#2b2b33');
+  }
+
+  // ---------- 婚纱 / 裙子 ----------
+  if(c.dress){
+    for(let i=0;i<9;i++){
+      const w = 10.4 + i*1.6;
+      P(-w/2, -20.6 + i*1.62, w, 1.75, i > 5 ? shade(c.dress, 0.93) : c.dress);
+    }
+    P(-9.6,-6.6, 19.2, 1.3, '#dfe2ee');
+    P(-5.6,-16.4, 11.2, 1.8, '#f0d8a0');            // 腰间缎带
+  }
+
+  // ---------- 身体 ----------
+  P(-5,-21, 10,13, shirt);
+  P(-5,-21, 10,3.2, shade(shirt,0.86));
+  if(c.tie) P(-1.2,-19.2, 2.4, 6.4, '#c03a3a');
+
+  // ---------- 手臂（内侧那一只伸出去牵手） ----------
+  const linkOn = c.link && !m.ghost && m.t >= m.enter;
+  const dir = linkOn ? (m.ox < 0 ? 1 : -1) : 0;
+  if(dir > 0){                     // 同伴在小人左边 → 伸右手
+    P(-7,-20+swing*0.5, 2.6, 9+swing, shirt);
+    P(-7,-11.4+swing*0.5, 2.8,2.6, skin);
+    P( 6.6,-20.8, 4.4,2.6, shirt); P(10.6,-21.2, 3.2,3.2, skin);
+  } else if(dir < 0){              // 同伴在小人右边 → 伸左手
+    P( 4.4,-20-swing*0.5, 2.6, 9-swing, shirt);
+    P( 4.4,-11.4-swing*0.5, 2.8,2.6, skin);
+    P(-11,-20.8, 4.4,2.6, shirt); P(-13.8,-21.2, 3.2,3.2, skin);
+  } else {
+    P(-7, -20+swing*0.5, 2.6, 9+swing, shirt);
+    P(-7, -11.4+swing*0.5, 2.8,2.6, skin);
+    P( 4.4,-20-swing*0.5, 2.6, 9-swing, shirt);
+    P( 4.4,-11.4-swing*0.5, 2.8,2.6, skin);
+    if(c.bag) P(7.4,-10.4, 5.6,6.6, '#6a4a2a');        // 公文包
+  }
+  if(c.bag && dir !== 0) P(7.4,-10.4, 5.6,6.6, '#6a4a2a');
+
+  // ---------- 头 ----------
+  const hyy  = -33;
+  const hs   = c.kid ? 1.34 : 1;                 // 小孩子：头大一点才像小孩
+  const hTop = -22 - 11*hs;
+  const H = function(dx,dy,w,h,col){ wpx(x + dx*hs*s, yy + (hTop + dy*hs)*s, w*hs*s, h*hs*s, col); };
+
+  P(-1.6,-23.6, 3.2,3.0, shade(skin,0.94));      // 脖子
+  H(-5, 0, 10, 11, skin);
+  H(-5.6, -1.2, 11.2, 4.6, hair);                // 头发
+  H(-5.6, 3.0, 2.4, 4.4, hair);
+  H( 3.2, 3.0, 2.4, 4.4, hair);
+  if(c.long){ H(-6.9, 0.6, 2.8, 12.5, hair); H(4.4, 0.6, 2.8, 12.5, hair); }
+
+  // ---------- 表情 ----------
+  H(-2.8, 5.0, 2, 2, '#2b2b33');
+  H( 1.2, 5.0, 2, 2, '#2b2b33');
+  H(-1.4, 8.6, 3.0, 1.4, '#c05a5a');
+  if(c.shy){ H(-4.8, 7.0, 2.6,1.8,'#ff9ec4'); H(2.4, 7.0, 2.6,1.8,'#ff9ec4'); }
+
+  // ---------- 头纱（垂在脑后 + 一串头花，别糊住脸） ----------
+  if(c.veil){
+    octx.globalAlpha = alpha*0.70;
+    H(-9.2, -1.4,  3.0, 9.4, '#f4f6ff');
+    H(-10.6, 7.4,  3.4, 15.0, '#eaeefc');
+    H(-11.8, 20.6, 4.4, 6.0, '#e4e9f8');
+    octx.globalAlpha = alpha;
+    for(let i=0;i<3;i++){
+      H(-4.6 + i*3.6, -2.2, 2.4, 2.4, i===1 ? '#ffd7e6' : '#ffffff');   // 头花
+    }
+  }
+
+  // ---------- 手捧花 ----------
+  if(c.bouquet){
+    const bx = (dir < 0) ? -15.6 : 12.2;
+    const cols = ['#ff9ec4','#ffffff','#ffd7e6','#ffe37a'];
+    for(let i=0;i<5;i++){
+      const a = i/5*6.2832 + m.ph;
+      P(bx + Math.cos(a)*2.8, -23.4 + Math.sin(a)*2.4, 2.6, 2.6, cols[i%4]);
+    }
+  }
+
+  // ---------- 头顶飘心 ----------
+  if(c.heart && !m.ghost){
+    const mx2 = (x + heroX)/2;
+    for(let i=0;i<3;i++){
+      const uu = (m.t*0.5 + i*0.33) % 1;
+      const a  = alpha * (1 - uu) * Math.min(1, m.t*1.5);
+      if(a <= 0.03) continue;
+      octx.globalAlpha = a;
+      pxHeart(mx2 + Math.sin(m.t*2.2 + i*2.1)*8, yy - 46*s - uu*22, 1, i%2 ? '#ff8ab4' : '#ffc6cd');
+      octx.globalAlpha = alpha;
+    }
+  }
+  octx.globalAlpha = 1;
+}
+
 function drawHero(age, walking, cx, feetY, extra){
   const A = Math.max(0, Math.min(85, age));
   const pose = heroPose();
@@ -1783,6 +2038,7 @@ function drawHero(age, walking, cx, feetY, extra){
 
   // ---- 手臂（按姿势切换）----
   const armSw = walking0 ? (f<2?1:-1) : 0;
+  const linkDir = heroLinkDir();          // 有同伴在旁边就牵手
   switch(pose.arms){
     case 1:   // 双手举高：欢呼 / 用力
       B(-8.6,-35, 2.8,14, shirt);  B(5.8,-35, 2.8,14, shirt);
@@ -1816,8 +2072,16 @@ function drawHero(age, walking, cx, feetY, extra){
       B(-8,-8.4, 2.8,3, skin);    B(5.4,-8.4, 2.8,3, skin);
       break;
     default:
-      B(-7, -20+armSw*0.5, 2.6, 9+armSw, shirt);
-      B(4.4, -20-armSw*0.5, 2.6, 9-armSw, shirt);
+      if(linkDir < 0){          // 同伴在左边：左手牵过去
+        B(-9.4,-21, 4.4,2.6, shirt); B(-13.6,-21.4, 3.2,3.2, skin);
+        B(4.4, -20-armSw*0.5, 2.6, 9-armSw, shirt);
+      } else if(linkDir > 0){   // 同伴在右边
+        B(-7, -20+armSw*0.5, 2.6, 9+armSw, shirt);
+        B(6.6,-21, 4.4,2.6, shirt); B(10.8,-21.4, 3.2,3.2, skin);
+      } else {
+        B(-7, -20+armSw*0.5, 2.6, 9+armSw, shirt);
+        B(4.4, -20-armSw*0.5, 2.6, 9-armSw, shirt);
+      }
   }
 
   // ---- 头 ----
@@ -1890,7 +2154,7 @@ function resetGame(){
     e.correct=null; e.chosenIdx=-1; e._kept=false;
   }
   heroAnim = null;
-  evFX.length = 0; heroAura = null;
+  evFX.length = 0; heroAura = null; mates.length = 0;
   gt = 0; score = 0; combo = 0; maxCombo = 0; done = 0; missed = 0;
   worldX = 0; animT = 0; chosen = null; endT = 0; flashT = 0; shakeT = 0;
   lastTheme = -1;
@@ -1934,6 +2198,8 @@ function complete(e, good){
     spawnParticles(150, GROUND-34, '#fff2b0', 6);
     // 这件任务专属的「成功」动画
     playEvFX(e.ok || DEF_OK[e.type], true, e);
+    // 有些人，会陪你一起走一段路（恋爱 / 结婚 / 生小孩 / 朋友 / 父母…）
+    if(e.mate) spawnMates(e.mate, e.mateOpt);
     // 按住/拖拽在过程中已经演过"使劲"了，完成时给个庆祝的小跳
     let kk = RKIND[e.type] || 'hop';
     if(e.type === 'hold' || e.type === 'drag') kk = 'hop';
@@ -2079,6 +2345,7 @@ function startGame(){
 function startFinal(){
   state = 'final';
   heroAnim = null;                 // 临终不再演反应动作
+  mates.length = 0;                // 随行的人也都散了
   finalDone = false; finalDoneT = 0; finalIntro = 0;
   const items = [
     {n:'爱人', ic:'heart', c:'#e0483c'},
@@ -2138,6 +2405,7 @@ function update(dt){
   animT += dt;
   if(heroAnim && !animFreeze){ heroAnim.t += dt; if(heroAnim.t >= heroAnim.dur) heroAnim = null; }
   stepEvFX(dt);
+  stepMates(dt);
   musicTick();
   if(talkT > 0) talkT -= dt;
   if(flashT > 0) flashT -= dt;
@@ -2213,6 +2481,8 @@ function render(){
   // 小人
   const heroX = 150;
   let feetY = GROUND;
+  // 随行同伴（恋爱 / 结婚 / 生小孩 / 父母 / 朋友 … 陪着走一段路）
+  if(state === 'play' && gt >= 2.2) drawMates(heroX, GROUND);
   if(state === 'play' && gt < 2.2){
     // 出生：从天上掉下来
     const t = Math.min(1, gt/1.6);
@@ -2764,6 +3034,7 @@ function wrapText(text, x, y, maxW, lh){
 //     &mute        静音
 //     &anim=lunge&ap=0.4   定格在小人的某个动作（用于检查动画）
 //     &fx=vacOk&ap=0.5     定格某个任务的成功/失败动画（&ok=0 强制看失败版）
+//     &mate=girl,child&ap=2 定格随行同伴（恋爱/结婚/生小孩叫来的那些人）
 // ------------------------------------------------------------
 (function debugEntry(){
   const q = location.search + location.hash;
@@ -2814,6 +3085,21 @@ function wrapText(text, x, y, maxW, lh){
     if(ff){ fxFreeze = true; ff.t = ff.dur * prog; }
     if(heroAura) heroAura.t = heroAura.dur * prog;
     if(heroAnim) heroAnim.t = heroAnim.dur * prog;
+  }
+  // 定格随行同伴，看谁在陪小人走路
+  //   ?mate=girl          一个女孩陪着走
+  //   ?mate=bride&ap=2    到第 2 秒（婚纱 + 牵手）
+  //   ?mate=mom,girl,child&ap=3
+  const mm = /[?&#]mate=([\w,]+)/.exec(q);
+  if(mm){
+    noSpawn = true;
+    if(state !== 'play'){ startGame(); noSpawn = true; }
+    if(!mt){ gt = 30; worldX = 30*44; }
+    const gopt = /[?&#]g=1/.test(q) ? {ghost:true, slots:[-27,-49,-71], enter:1.3} : {};
+    spawnMates(mm[1], gopt);
+    const at = mp ? parseFloat(mp[1]) : 1.6;
+    for(const m of mates) m.t = at;
+    mateFreeze = true;
   }
 })();
 

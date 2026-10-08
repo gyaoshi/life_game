@@ -1,5 +1,7 @@
 # 临时调试产物
 _*.js
+_*.html
+_*.png
 _zoom.html
 _zoom.png
 anim_*.png
@@ -7,6 +9,9 @@ a2_*.png
 a3_*.png
 final_*.png
 shot_*.png
+m_*.png
+n_*.png
+f_*.png
 
 # 工具运行时状态
 .workbuddy/
